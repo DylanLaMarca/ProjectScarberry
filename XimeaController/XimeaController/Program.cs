@@ -20,7 +20,7 @@ namespace xiAPI.NET_example
         private static readonly string imagePath = "images";
         private static readonly string pipeName = "XimeaPipe";
         private static int exposure = 250;
-        private static int numberOfImages = 3;
+        private static int numberOfImages = 10;
         private static float gain = 5;
 
         static void Main(string[] args)
@@ -49,16 +49,13 @@ namespace xiAPI.NET_example
                     //Bitmap myImage;
                     int timeout = 10000;
 
-                    pipeWriter.Write((uint)numberOfImages);
+                    //pipeWriter.Write((uint)numberOfImages);
                     for (int count = 0; count < numberOfImages; count++)
                     {
                         myCam.GetImage(safeImage, timeout);
-                        //string fName = string.Format(imagePath + "/BWimage{0}.png", count);
-                        byte[] imageBytes = Encoding.ASCII.GetBytes(imageToBase64(safeImage));
+                        byte[] imageBytes = formatStringToPipe(safeImage);
                         pipeWriter.Write((uint)imageBytes.Length);
                         pipeWriter.Write(imageBytes);
-                        //Console.WriteLine("Got image: {0}, size {1}x{2} saving to {3}", count, safeImage.Width, safeImage.Height, fName);
-                        //safeImage.Save(fName);
                     }
 
                     myCam.StopAcquisition();
@@ -123,17 +120,15 @@ namespace xiAPI.NET_example
             pipeWriter = new BinaryWriter(server);
         }
 
-        static string imageToBase64(Image image)
+        static byte[] formatStringToPipe(Image image)
         {
             using (MemoryStream m = new MemoryStream())
             {
                 Console.WriteLine(m.CanRead);
                 image.Save(m, ImageFormat.Bmp);
                 byte[] imageBytes = m.ToArray();
-
-                // Convert byte[] to Base64 String
                 string base64String = Convert.ToBase64String(imageBytes);
-                return base64String;
+                return Encoding.ASCII.GetBytes(base64String);
             }
         }
     }
