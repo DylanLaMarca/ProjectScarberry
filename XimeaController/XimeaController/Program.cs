@@ -7,13 +7,18 @@ using System.Windows.Media.Imaging;
 using System.IO;
 using System.Threading;
 using xiApi.NET;
+using System.IO.Pipes;
+using System.Drawing.Imaging;
 
 namespace xiAPI.NET_example
 {
     class Program
     {
         private static xiCam myCam;
+        private static NamedPipeServerStream server;
+        private static BinaryWriter pipeWriter;
         private static readonly string imagePath = "images";
+        private static readonly string pipeName = "XimeaPipe";
         private static int exposure = 250;
         private static int numberOfImages = 10;
         private static float gain = 5;
@@ -22,40 +27,50 @@ namespace xiAPI.NET_example
         {
             try
             {
-                formatCamera();
-                //------------------------------------------------------------------------------------
-                // Capture images using safe buffer policy
-                Console.WriteLine("");
-                Console.WriteLine("Capturing images with safe buffer policy");
-                int width = 0, height = 0;
-                // image width must be divisible by 4
-                myCam.GetParam(PRM.WIDTH, out width);
-                myCam.SetParam(PRM.WIDTH, width - (width % 4));
-                myCam.GetParam(PRM.WIDTH, out width);
-                myCam.GetParam(PRM.HEIGHT, out height);
-                Bitmap safeImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
-                myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
-                //------------------------------------------------------------------------------------
-                // Start image acquisition
-                myCam.StartAcquisition();
-                //Bitmap myImage;
-                int timeout = 10000;
-                for (int count = 0; count < numberOfImages; count++)
+                formatPipe();
+                try
                 {
-                    myCam.GetImage(safeImage, timeout);
-                    string fName = string.Format(imagePath + "/BWimage{0}.png", count);
-                    Console.WriteLine("Got image: {0}, size {1}x{2} saving to {3}", count, safeImage.Width, safeImage.Height, fName);
-                    safeImage.Save(fName);
-                }
+                    formatCamera();
+                    //------------------------------------------------------------------------------------
+                    // Capture images using safe buffer policy
+                    Console.WriteLine("");
+                    Console.WriteLine("Capturing images with safe buffer policy");
+                    int width = 0, height = 0;
+                    // image width must be divisible by 4
+                    myCam.GetParam(PRM.WIDTH, out width);
+                    myCam.SetParam(PRM.WIDTH, width - (width % 4));
+                    myCam.GetParam(PRM.WIDTH, out width);
+                    myCam.GetParam(PRM.HEIGHT, out height);
+                    Bitmap safeImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+                    myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
+                    //------------------------------------------------------------------------------------
+                    // Start image acquisition
+                    myCam.StartAcquisition();
+                    //Bitmap myImage;
+                    int timeout = 10000;
 
-                myCam.StopAcquisition();
+                    //pipeWriter.Write((uint)numberOfImages);
+                    for (int count = 0; count < numberOfImages; count++)
+                    {
+                        myCam.GetImage(safeImage, timeout);
+                        byte[] imageBytes = formatStringToPipe(safeImage);
+                        pipeWriter.Write((uint)imageBytes.Length);
+                        pipeWriter.Write(imageBytes);
+                    }
+
+                    myCam.StopAcquisition();
+                }
+                catch (System.ApplicationException appExc)
+                {
+                    Console.WriteLine(appExc.Message);
+                    Thread.Sleep(3000);
+                    myCam.CloseDevice();
+                }
             }
-            catch (System.ApplicationException appExc)
-            {
-                Console.WriteLine(appExc.Message);
-                Thread.Sleep(3000);
-                myCam.CloseDevice();
-            }
+            catch (EndOfStreamException) { }
+            Console.WriteLine("Client disconnected.");
+            server.Close();
+            server.Dispose();
         }
 
         static void formatCamera()
@@ -93,6 +108,28 @@ namespace xiAPI.NET_example
 
             // Set image output format to monochrome 8 bit
             myCam.SetParam(PRM.IMAGE_DATA_FORMAT, IMG_FORMAT.MONO8);
+        }
+
+        static void formatPipe()
+        {
+            // Open the named pipe.
+            server = new NamedPipeServerStream(pipeName);
+            Console.WriteLine("Waiting for connection...");
+            server.WaitForConnection();
+            Console.WriteLine("Connected.");
+            pipeWriter = new BinaryWriter(server);
+        }
+
+        static byte[] formatStringToPipe(Image image)
+        {
+            using (MemoryStream m = new MemoryStream())
+            {
+                Console.WriteLine(m.CanRead);
+                image.Save(m, ImageFormat.Bmp);
+                byte[] imageBytes = m.ToArray();
+                string base64String = Convert.ToBase64String(imageBytes);
+                return Encoding.ASCII.GetBytes(base64String);
+            }
         }
     }
 }
