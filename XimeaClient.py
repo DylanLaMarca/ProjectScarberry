@@ -1,4 +1,3 @@
-import time
 import struct
 import base64
 import cv2

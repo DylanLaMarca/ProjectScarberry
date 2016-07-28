@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
-using System.Collections;
 using System.Drawing;
-using System.Windows.Media.Imaging;
 using System.IO;
 using System.Threading;
 using xiApi.NET;
@@ -19,6 +16,7 @@ namespace xiAPI.NET_example
         private static BinaryWriter pipeWriter;
         private static readonly string imagePath = "images";
         private static readonly string pipeName = "XimeaPipe";
+        private static readonly int pauseTime = 3000;
         private static int exposure = 250;
         private static int numberOfImages = 10;
         private static float gain = 5;
@@ -35,24 +33,12 @@ namespace xiAPI.NET_example
                     // Capture images using safe buffer policy
                     Console.WriteLine("");
                     Console.WriteLine("Capturing images with safe buffer policy");
-                    int width = 0, height = 0;
-                    // image width must be divisible by 4
-                    myCam.GetParam(PRM.WIDTH, out width);
-                    myCam.SetParam(PRM.WIDTH, width - (width % 4));
-                    myCam.GetParam(PRM.WIDTH, out width);
-                    myCam.GetParam(PRM.HEIGHT, out height);
-                    Bitmap safeImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+                    Bitmap safeImage = createSafeBitmap();
                     myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
-                    //------------------------------------------------------------------------------------
-                    // Start image acquisition
                     myCam.StartAcquisition();
-                    //Bitmap myImage;
-                    int timeout = 10000;
-
-                    //pipeWriter.Write((uint)numberOfImages);
                     for (int count = 0; count < numberOfImages; count++)
                     {
-                        myCam.GetImage(safeImage, timeout);
+                        myCam.GetImage(safeImage, 10000);
                         byte[] imageBytes = formatStringToPipe(safeImage);
                         pipeWriter.Write((uint)imageBytes.Length);
                         pipeWriter.Write(imageBytes);
@@ -63,7 +49,7 @@ namespace xiAPI.NET_example
                 catch (System.ApplicationException appExc)
                 {
                     Console.WriteLine(appExc.Message);
-                    Thread.Sleep(3000);
+                    Thread.Sleep(pauseTime);
                     myCam.CloseDevice();
                 }
             }
@@ -82,7 +68,7 @@ namespace xiAPI.NET_example
             if (0 == numDevices)
             {
                 Console.WriteLine("No devices found");
-                Thread.Sleep(3000);
+                Thread.Sleep(pauseTime);
                 return;
             }
             else
@@ -118,6 +104,17 @@ namespace xiAPI.NET_example
             server.WaitForConnection();
             Console.WriteLine("Connected.");
             pipeWriter = new BinaryWriter(server);
+        }
+
+        static Bitmap createSafeBitmap()
+        {
+            int width = 0, height = 0;
+            // image width must be divisible by 4
+            myCam.GetParam(PRM.WIDTH, out width);
+            myCam.SetParam(PRM.WIDTH, width - (width % 4));
+            myCam.GetParam(PRM.WIDTH, out width);
+            myCam.GetParam(PRM.HEIGHT, out height);
+            return new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
         }
 
         static byte[] formatStringToPipe(Image image)
