@@ -1,25 +1,22 @@
-int TOTAL_MILLISECONDS = 1000;
 int hertz;
-double thigh;
-int tcycle;
+int period;
 double duty_cycle;
+int time_high;
 
 
 void setup() {
   pinMode(13, OUTPUT);
-  hertz = 1;
+  hertz = 10;
   duty_cycle = .5;
-  calc_duty_cycle();
-}
-
-void calc_duty_cycle() {
-  tcycle = TOTAL_MILLISECONDS/hertz;
-  thigh = tcycle*duty_cycle;
+  period = 1000/hertz;
+  time_high = period*duty_cycle;
 }
 
 void loop() {
   digitalWrite(13, HIGH);  
-  delay(thigh);
+  Serial.print("On");
+  delay(time_high);
   digitalWrite(13, LOW);  
-  delay(tcycle-thigh);
+  Serial.print("Off");
+  delay(period-time_high);
 }
