@@ -1,15 +1,24 @@
 import serial
 import time
 
-ser = serial.Serial('COM6',9600)
-time.sleep(5)
-print('Write: 30')
-ser.write('5')
-print('Wrote: 30')
-time.sleep(5)
-print('Write: .5')
-ser.write('.2/')
-print('Wrote: .5')
-while True:
-    print ser.read()
-    print('.')
+class ArduinoController:
+    ser = None
+
+    def __init__(self,com_number):
+        self.ser = serial.Serial('COM{}'.format(com_number),9600)
+        print('Waiting for COM{}...'.format(com_number))
+        time.sleep(5);
+
+    def write_value(self,value,pause):
+        print('Writing "{}"...'.format(value))
+        self.ser.write('{}'.format(value))
+        time.sleep(pause)
+        print('Wrote: {}'.format(value))
+
+def main():
+    controller = ArduinoController(6)
+    controller.write_value(30,3)
+    controller.write_value(.5,3)
+
+if __name__ == "__main__":
+    main()
