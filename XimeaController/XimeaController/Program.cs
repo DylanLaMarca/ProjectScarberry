@@ -23,9 +23,9 @@ namespace xiAPI.NET_example
 
         static void Main(string[] args)
         {
-            try
-            {
-                formatPipe();
+            //try
+            //{
+                //formatPipe();
                 try
                 {
                     formatCamera();
@@ -36,13 +36,14 @@ namespace xiAPI.NET_example
                     Bitmap safeImage = createSafeBitmap();
                     myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
                     myCam.StartAcquisition();
-                    for (int count = 0; count < numberOfImages; count++)
-                    {
+                    //for (int count = 0; count < numberOfImages; count++)
+                    //{
                         myCam.GetImage(safeImage, 10000);
-                        byte[] imageBytes = formatStringToPipe(safeImage);
-                        pipeWriter.Write((uint)imageBytes.Length);
-                        pipeWriter.Write(imageBytes);
-                    }
+                        //byte[] imageBytes = formatStringToPipe(safeImage);
+                        //pipeWriter.Write((uint)imageBytes.Length);
+                        //pipeWriter.Write(imageBytes);
+                        safeImage.Save("image.jpg");
+                    //}
 
                     myCam.StopAcquisition();
                 }
@@ -52,11 +53,11 @@ namespace xiAPI.NET_example
                     Thread.Sleep(pauseTime);
                     myCam.CloseDevice();
                 }
-            }
+            /*}
             catch (EndOfStreamException) { }
             Console.WriteLine("Client disconnected.");
             server.Close();
-            server.Dispose();
+            server.Dispose();*/
         }
 
         static void formatCamera()
@@ -91,6 +92,14 @@ namespace xiAPI.NET_example
             Console.WriteLine("Exposure was set to {0} microseconds", exposure);
             myCam.SetParam(PRM.GAIN, gain);
             Console.WriteLine("Gain was set to {0} decibels.", gain);
+
+            Console.WriteLine("Setting GPI Mode trigger.");
+            myCam.SetParam(PRM.GPI_SELECTOR, 1);
+            myCam.SetParam(PRM.GPI_MODE, TRG_SOURCE.EDGE_RISING);
+
+            Console.WriteLine("Setting GPO Mode to output exposure.");
+            myCam.SetParam(PRM.GPO_SELECTOR, 1);
+            myCam.SetParam(PRM.GPO_MODE, GPO_MODE.EXPOSURE_ACTIVE);
 
             // Set image output format to monochrome 8 bit
             myCam.SetParam(PRM.IMAGE_DATA_FORMAT, IMG_FORMAT.MONO8);
