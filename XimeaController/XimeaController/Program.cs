@@ -23,9 +23,9 @@ namespace xiAPI.NET_example
 
         static void Main(string[] args)
         {
-            //try
-            //{
-                //formatPipe();
+            try
+            {
+                formatPipe();
                 try
                 {
                     formatCamera();
@@ -53,11 +53,11 @@ namespace xiAPI.NET_example
                     Thread.Sleep(pauseTime);
                     myCam.CloseDevice();
                 }
-            /*}
+            }
             catch (EndOfStreamException) { }
             Console.WriteLine("Client disconnected.");
             server.Close();
-            server.Dispose();*/
+            server.Dispose();
         }
 
         static void formatCamera()
@@ -93,9 +93,11 @@ namespace xiAPI.NET_example
             myCam.SetParam(PRM.GAIN, gain);
             Console.WriteLine("Gain was set to {0} decibels.", gain);
 
+            myCam.SetParam(PRM.TRG_SOURCE, TRG_SOURCE.EDGE_RISING);
+
             Console.WriteLine("Setting GPI Mode trigger.");
             myCam.SetParam(PRM.GPI_SELECTOR, 1);
-            myCam.SetParam(PRM.GPI_MODE, TRG_SOURCE.EDGE_RISING);
+            myCam.SetParam(PRM.GPI_MODE, GPI_MODE.TRIGGER);
 
             Console.WriteLine("Setting GPO Mode to output exposure.");
             myCam.SetParam(PRM.GPO_SELECTOR, 1);
