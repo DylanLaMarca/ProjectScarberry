@@ -33,9 +33,9 @@ namespace xiAPI.NET_example
         static void Main(string[] args)
         {
             captureThread = new Thread(new ThreadStart(cameraThread));
-            sendThread = new Thread(new ThreadStart(pipeThread));
+            //sendThread = new Thread(new ThreadStart(pipeThread));
             captureThread.Start();
-            sendThread.Start();
+            //sendThread.Start();
         }
 
         static void cameraThread()
@@ -51,12 +51,16 @@ namespace xiAPI.NET_example
                     Bitmap safeImage = createSafeBitmap();
                     myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
                     myCam.StartAcquisition();
+                    int count = 0;
                     while (run)
                     {
                         Console.WriteLine("Capturing images with safe buffer policy");
                         myCam.GetImage(safeImage, 10000);
-                        images.Enqueue(safeImage);
-                        sendPauseEvent.Set();
+                        //images.Enqueue(safeImage);
+                        //sendPauseEvent.Set();
+                        String fileName = String.Format("images\\image{0}.png", count);
+                        safeImage.Save(fileName);
+                        count++;
                     }
                     myCam.StopAcquisition();
                 }
