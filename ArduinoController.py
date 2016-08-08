@@ -19,13 +19,9 @@ class ArduinoController:
 def main():
     sleep = 2
     controller = ArduinoController(6)
-    controller.write_value(10,sleep)
-    controller.write_value(2,sleep)
+    controller.write_value(5,sleep)
     controller.write_value(.5,sleep)
-    controller.write_value(1,sleep)
-    controller.write_value(2,sleep)
-    controller.write_value(3,sleep)
-    time.sleep(1)
-    controller.write_value(1,0)
+    controller.write_value(6,sleep)
+
 if __name__ == "__main__":
     main()
