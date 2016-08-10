@@ -6,70 +6,89 @@ using System.Threading;
 using xiApi.NET;
 using System.IO.Pipes;
 using System.Drawing.Imaging;
+using System.Collections.Generic;
 
 namespace xiAPI.NET_example
 {
     class Program
     {
-        private static xiCam myCam;
+        private static readonly string IMAGE_PATH = "images";
+        private static readonly string PIPE_NAME = "XimeaPipe";
+        private static readonly int PAUSE_TIME = 3000;
+
+        private static ManualResetEvent sendPauseEvent = new ManualResetEvent(false);
+        private static Queue<Bitmap> images = new Queue<Bitmap>();
+        private static bool formatCameraComplete = false;
+        private static bool formatPipeComplete = false;
+        private static bool run = true;
+        private static int exposure = 250;
+        private static float gain = 5;
+
         private static NamedPipeServerStream server;
         private static BinaryWriter pipeWriter;
-        private static readonly string imagePath = "images";
-        private static readonly string pipeName = "XimeaPipe";
-        private static readonly int pauseTime = 3000;
-        private static int exposure = 250;
-        private static int numberOfImages = 10;
-        private static float gain = 5;
+        private static Thread captureThread;
+        private static Thread sendThread;
+        private static xiCam myCam;
 
         static void Main(string[] args)
         {
-            //try
-            //{
-            //formatPipe();
+            captureThread = new Thread(new ThreadStart(cameraThread));
+            sendThread = new Thread(new ThreadStart(pipeThread));
+            captureThread.Start();
+            sendThread.Start();
+        }
+
+        static void cameraThread()
+        {
             try
             {
-                formatCamera();
-                //------------------------------------------------------------------------------------
-                // Capture images using safe buffer policy
-                Console.WriteLine("");
-                Console.WriteLine("Capturing images with safe buffer policy");
-                Bitmap safeImage = createSafeBitmap();
-                myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
-                myCam.StartAcquisition();
-                //for (int count = 0; count < numberOfImages; count++)
-                //{
-                myCam.GetImage(safeImage, 10000);
-                //byte[] imageBytes = formatStringToPipe(safeImage);
-                //pipeWriter.Write((uint)imageBytes.Length);
-                //pipeWriter.Write(imageBytes);
-                safeImage.Save("image.jpg");
-                //}
-
-                myCam.StopAcquisition();
+                try
+                {
+                    formatCamera();
+                    formatCameraComplete = true;
+                    while (!formatCameraComplete && !formatPipeComplete) { }
+                    Console.WriteLine("");
+                    Bitmap safeImage = createSafeBitmap();
+                    myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
+                    myCam.StartAcquisition();
+                    while (run)
+                    {
+                        Console.WriteLine("Capturing images with safe buffer policy");
+                        myCam.GetImage(safeImage, 10000);
+                        images.Enqueue(new Bitmap(safeImage));
+                        sendPauseEvent.Set();
+                    }
+                    myCam.StopAcquisition();
+                }
+                catch (ApplicationException appExc)
+                {
+                    Console.WriteLine("AppErr");
+                    Console.WriteLine(appExc.Message);
+                    myCam.CloseDevice();
+                }
             }
-            catch (System.ApplicationException appExc)
+            catch (ThreadAbortException threadExc)
             {
-                Console.WriteLine(appExc.Message);
-                Thread.Sleep(pauseTime);
+                Console.WriteLine("ThreadErr");
+                Console.WriteLine(threadExc.Message);
                 myCam.CloseDevice();
             }
-            /*}
-            catch (EndOfStreamException) { }
-            Console.WriteLine("Client disconnected.");
-            server.Close();
-            server.Dispose();*/
+
+            run = false;
+            sendPauseEvent.Set();
+            Thread.Sleep(250);
         }
 
         static void formatCamera()
         {
             myCam = new xiCam();
-            Directory.CreateDirectory(imagePath);
+            Directory.CreateDirectory(IMAGE_PATH);
             int numDevices = 0;
             myCam.GetNumberDevices(out numDevices);
             if (0 == numDevices)
             {
                 Console.WriteLine("No devices found");
-                Thread.Sleep(pauseTime);
+                Thread.Sleep(PAUSE_TIME);
                 return;
             }
             else
@@ -107,10 +126,47 @@ namespace xiAPI.NET_example
             myCam.SetParam(PRM.IMAGE_DATA_FORMAT, IMG_FORMAT.MONO8);
         }
 
+        static void pipeThread()
+        {
+
+            /*try
+            {*/
+            //formatPipe();
+            formatPipeComplete = true;
+            while (!formatCameraComplete && !formatPipeComplete) { }
+            int count = 0;
+            while (run)
+            {
+                while (images.Count > 0)
+                {
+                    Console.WriteLine(images.Count);
+                    images.Dequeue().Save(string.Format("images\\image{0}.jpg", count));
+                    count++;
+                    /*byte[] imageBytes = formatStringToPipe(images.Dequeue());
+                    pipeWriter.Write((uint)imageBytes.Length);
+                    pipeWriter.Write(imageBytes);*/
+                }
+                Console.WriteLine("sendThread: Wait");
+                sendPauseEvent.WaitOne();
+                sendPauseEvent.Reset();
+                Console.WriteLine("sendThread: Release");
+            }
+            /*}
+            catch (EndOfStreamException) { 
+                captureThread.Abort();
+            }*/
+
+
+            /*Console.WriteLine("Client disconnected.");
+            server.Close();
+            server.Dispose();
+            captureThread.Abort();*/
+        }
+
         static void formatPipe()
         {
             // Open the named pipe.
-            server = new NamedPipeServerStream(pipeName);
+            server = new NamedPipeServerStream(PIPE_NAME);
             Console.WriteLine("Waiting for connection...");
             server.WaitForConnection();
             Console.WriteLine("Connected.");
