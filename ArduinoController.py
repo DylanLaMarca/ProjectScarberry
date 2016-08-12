@@ -9,6 +9,7 @@ class ArduinoController:
         self.ser = serial.Serial('COM{}'.format(com_number),115200)
         print('Waiting for COM{}...'.format(com_number))
         time.sleep(self.initial_sleep);
+        print('Connected to COM{}.'.format(com_number))
 
     def write_value(self,value,pause):
         print('Writing "{}"...'.format(value))
@@ -19,9 +20,10 @@ class ArduinoController:
 def main():
     sleep = 2
     controller = ArduinoController(6)
-    controller.write_value(5,sleep)
-    controller.write_value(.5,sleep)
-    controller.write_value(6,sleep)
+    controller.write_value(5, sleep)
+    controller.write_value(6, sleep)
+    controller.write_value(.5, sleep)
+    controller.write_value(1, 0)
 
 if __name__ == "__main__":
     main()

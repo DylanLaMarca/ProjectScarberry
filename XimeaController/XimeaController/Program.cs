@@ -21,11 +21,13 @@ namespace xiAPI.NET_example
         private static bool formatCameraComplete = false;
         private static bool formatPipeComplete = false;
         private static bool run = true;
-        private static int exposure = 250;
-        private static float gain = 5;
+        private static int exposure;
+        private static int timeout;
+        private static float gain;
 
         private static NamedPipeServerStream server;
         private static BinaryWriter pipeWriter;
+        private static BinaryReader pipeReader;
         private static Thread captureThread;
         private static Thread sendThread;
         private static xiCam myCam;
@@ -46,31 +48,29 @@ namespace xiAPI.NET_example
                 {
                     formatCamera();
                     formatCameraComplete = true;
-                    while (!formatCameraComplete && !formatPipeComplete) { }
-                    Console.WriteLine("");
                     Bitmap safeImage = createSafeBitmap();
                     myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
                     myCam.StartAcquisition();
+                    int count = 0;
                     while (run)
                     {
-                        Console.WriteLine("Capturing images with safe buffer policy");
-                        myCam.GetImage(safeImage, 10000);
+                        Console.WriteLine("Capturing image {0} with safe buffer policy",count);
+                        myCam.GetImage(safeImage, timeout);
                         images.Enqueue(new Bitmap(safeImage));
                         sendPauseEvent.Set();
+                        count++;
                     }
                     myCam.StopAcquisition();
                 }
                 catch (ApplicationException appExc)
                 {
-                    Console.WriteLine("AppErr");
-                    Console.WriteLine(appExc.Message);
+                    Console.WriteLine("AppErr: {0}", appExc.Message);
                     myCam.CloseDevice();
                 }
             }
             catch (ThreadAbortException threadExc)
             {
-                Console.WriteLine("ThreadErr");
-                Console.WriteLine(threadExc.Message);
+                Console.WriteLine("ThreadErr: {0}", threadExc.Message);
                 myCam.CloseDevice();
             }
 
@@ -107,6 +107,9 @@ namespace xiAPI.NET_example
             // Get device serial number
             myCam.GetParam(PRM.DEVICE_SN, out strVal);
             Console.WriteLine("Device serial number {0}", strVal);
+
+            while (!formatPipeComplete) { }
+
             myCam.SetParam(PRM.EXPOSURE, exposure);
             Console.WriteLine("Exposure was set to {0} microseconds", exposure);
             myCam.SetParam(PRM.GAIN, gain);
@@ -118,7 +121,7 @@ namespace xiAPI.NET_example
             myCam.SetParam(PRM.GPI_SELECTOR, 1);
             myCam.SetParam(PRM.GPI_MODE, GPI_MODE.TRIGGER);
 
-            Console.WriteLine("Setting GPO Mode to output exposure.");
+            Console.WriteLine("Setting GPO Mode to active exposure.");
             myCam.SetParam(PRM.GPO_SELECTOR, 1);
             myCam.SetParam(PRM.GPO_MODE, GPO_MODE.EXPOSURE_ACTIVE);
 
@@ -129,48 +132,55 @@ namespace xiAPI.NET_example
         static void pipeThread()
         {
 
-            /*try
-            {*/
-            //formatPipe();
-            formatPipeComplete = true;
-            while (!formatCameraComplete && !formatPipeComplete) { }
-            int count = 0;
-            while (run)
+            try
             {
-                while (images.Count > 0)
+                formatPipe();
+                exposure = 49000;
+                gain = 1;
+                timeout = 5000;
+                formatPipeComplete = true;
+                while (!formatCameraComplete) { }
+                int count = 0;
+                while (run)
                 {
-                    Console.WriteLine(images.Count);
-                    images.Dequeue().Save(string.Format("images\\image{0}.jpg", count));
-                    count++;
-                    /*byte[] imageBytes = formatStringToPipe(images.Dequeue());
-                    pipeWriter.Write((uint)imageBytes.Length);
-                    pipeWriter.Write(imageBytes);*/
+                    while (images.Count > 0)
+                    {
+                        byte[] imageBytes = formatStringToPipe(images.Dequeue());
+                        pipeWriter.Write((uint)imageBytes.Length);
+                        pipeWriter.Write(imageBytes);
+                        count++;
+                    }
+                    Console.WriteLine("sendThread: Wait");
+                    sendPauseEvent.WaitOne();
+                    sendPauseEvent.Reset();
+                    Console.WriteLine("sendThread: Released");
                 }
-                Console.WriteLine("sendThread: Wait");
-                sendPauseEvent.WaitOne();
-                sendPauseEvent.Reset();
-                Console.WriteLine("sendThread: Release");
             }
-            /*}
-            catch (EndOfStreamException) { 
-                captureThread.Abort();
-            }*/
-
-
-            /*Console.WriteLine("Client disconnected.");
+            catch (EndOfStreamException) { }
+            Console.WriteLine("Client disconnected.");
             server.Close();
             server.Dispose();
-            captureThread.Abort();*/
+            captureThread.Abort();
         }
 
         static void formatPipe()
         {
             // Open the named pipe.
             server = new NamedPipeServerStream(PIPE_NAME);
-            Console.WriteLine("Waiting for connection...");
+            Console.WriteLine("Waiting for client connection...");
             server.WaitForConnection();
-            Console.WriteLine("Connected.");
+            Console.WriteLine("Client connected.");
             pipeWriter = new BinaryWriter(server);
+            pipeReader = new BinaryReader(server);
+
+            exposure = getPipedInt();
+            gain = getPipedInt();
+            //timeout = getPipedInt();
+        }
+
+        static int getPipedInt()
+        {
+            return (int)pipeReader.ReadUInt32();
         }
 
         static Bitmap createSafeBitmap()
@@ -188,7 +198,6 @@ namespace xiAPI.NET_example
         {
             using (MemoryStream m = new MemoryStream())
             {
-                Console.WriteLine(m.CanRead);
                 image.Save(m, ImageFormat.Bmp);
                 byte[] imageBytes = m.ToArray();
                 string base64String = Convert.ToBase64String(imageBytes);

@@ -1,14 +1,18 @@
 import struct
 import base64
-import cv2
+import numpy
 
 class XimeaClient:
     pipe = None
     pipe_name = 'XimeaPipe'
     image_direcoty = 'images'
 
-    def __init__(self):
+    def __init__(self,values):
         self.pipe = open(r'\\.\pipe\{}'.format(self.pipe_name), 'r+b', 0)
+        print 'opening {}...',format(r'\\.\pipe\{}'.format(self.pipe_name))
+        self.pipe.write(numpy.uint32(values[0]))
+        print 'sending {} {}'.format(self.pipe_name, values[1])
+        self.pipe.write(numpy.uint32(values[1]))
 
     def get_image(self):
         image_length = struct.unpack('I', self.pipe.read(4))[0]
@@ -28,7 +32,7 @@ class XimeaClient:
 
 def main():
     try:
-        client = XimeaClient();
+        client = XimeaClient(250,2);
         count = 0
         run = True
         while run:
