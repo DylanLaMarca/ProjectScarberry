@@ -1,4 +1,5 @@
-Arduino:FrameRate[1]
+Main:UseInterface[1]
+Arduino:FrameRate[20]
 Arduino:StrobeCount[20]
 Arduino:DutyCycle[.1]
 XimeaClient:Exposure[250]
