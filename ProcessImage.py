@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import Interface
 
 class ProcessImage:
     @staticmethod
@@ -91,6 +92,12 @@ class ProcessImage:
         for image in images:
             cv2.imwrite("{}{}.{}".format(name,count,file_type),image)
             count+=1
+
+    def chose_print(self, gui, text):
+        if (gui == None):
+            print
+        else:
+            gui.print_to_process_text(text)
 
 def main():
     file_path = 'images\\examples\\20-20-.5\\image119.jpg'

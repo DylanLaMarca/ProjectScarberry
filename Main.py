@@ -11,9 +11,8 @@ import Interface
 pic_queue = Queue.Queue(maxsize=0)
 started_client = False
 started_arduino = False
-run_process_worker = True;
-run_camera_worker = True;
-print_to_console = True
+run_process_worker = True
+run_camera_worker = True
 main_values = None
 arduino_values = None
 camera_values = None
@@ -51,7 +50,7 @@ def arduino_worker():
     global arduino_values
     global started_arduino
     global started_client
-    controller = ArduinoController.ArduinoController(6)
+    controller = ArduinoController.ArduinoController(6,gui)
     for value in arduino_values:
         controller.write_value(value, sleep)
 
@@ -61,7 +60,7 @@ def arduino_worker():
     controller.write_value(1,0)
     time.sleep(run_time)
     controller.write_value(4,0)
-    print 'ArduinoThread: Finished'
+    Interface.chose_print(gui, 'arduino', 'ArduinoThread: Finished')
 
 
 def camera_worker():
@@ -74,7 +73,7 @@ def camera_worker():
     subprocess.Popen('XimeaController\\XimeaController\\bin\\Debug\\XimeaController.exe')
     time.sleep(long_sleep)
     try:
-        client = XimeaClient.XimeaClient(camera_values);
+        client = XimeaClient.XimeaClient(camera_values,gui);
         run = True
         started_client = True
         while not started_arduino:
@@ -84,12 +83,12 @@ def camera_worker():
                 current_image = client.get_image()
                 pic_queue.put(current_image)
             except struct.error as struct_err:
-                print('Main: Server Disconnected: struct_err: {}'.format(struct_err))
+                Interface.chose_print(gui,'camera','Main: Server Disconnected: struct_err: {}'.format(struct_err))
                 run = False
     except IOError as io_err:
-        print('Main: IOError: {}'.format(io_err))
+        Interface.chose_print(gui, 'camera','Main: IOError: {}'.format(io_err))
     run_process_worker = False
-    print 'XimeaClientThread: Finished'
+    Interface.chose_print(gui, 'camera','XimeaClientThread: Finished')
 
 
 def process_worker():
@@ -99,10 +98,10 @@ def process_worker():
     while run_process_worker:
         while not pic_queue.empty():
             pic = pic_queue.get()
-            print(hash(pic))
+            Interface.chose_print(gui, 'process','pic hex: {}'.format((hash(pic))))
             client.save_image(pic,count)
             count += 1
-    print 'ProcessImageThread: Finished'
+    Interface.chose_print(gui, 'process', 'ProcessImageThread: Finished')
 
 def start_threads():
     arduino = threading.Thread(name="ArduinoThread", target=arduino_worker)
@@ -114,12 +113,10 @@ def start_threads():
 
 def main():
     global gui
-    global print_to_console
-
     format_settings()
     if(int(main_values[0]) > 0):
         gui = Interface.ScarberryGui(start_button_function=start_threads)
-        print_to_console = False
+        gui.start()
     else:
         start_threads()
 
