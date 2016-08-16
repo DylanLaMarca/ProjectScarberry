@@ -12,10 +12,10 @@ class XimeaClient:
     def __init__(self,values,gui):
         self.gui = gui
         self.pipe = open(r'\\.\pipe\{}'.format(self.pipe_name), 'r+b', 0)
-        Interface.chose_print(gui,'camera','opening {}...'.format(r'\\.\pipe\{}'.format(self.pipe_name)))
+        Interface.choose_print(gui, 'camera', 'opening {}...'.format(r'\\.\pipe\{}'.format(self.pipe_name)))
+        self.pipe.write(numpy.uint32(250))
+        Interface.choose_print(gui, 'camera', 'sending {} {}'.format(self.pipe_name, values[0]))
         self.pipe.write(numpy.uint32(values[0]))
-        Interface.chose_print(gui,'camera','sending {} {}'.format(self.pipe_name, values[1]))
-        self.pipe.write(numpy.uint32(values[1]))
 
     def get_image(self):
         image_length = struct.unpack('I', self.pipe.read(4))[0]
