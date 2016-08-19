@@ -1,6 +1,7 @@
 from Tkinter import *
 import ttk
 import Main
+import XimeaClient
 import subprocess
 
 class ScarberryGui:
@@ -72,13 +73,14 @@ class ScarberryGui:
         menu_bar = Menu(self.master, tearoff=0)
         self.master.config(menu=menu_bar)
         file_menu = Menu(menu_bar)
+        file_menu.add_command(label='Open Images',command=self.open_images)
         file_menu.add_command(label='Exit')
         menu_bar.add_cascade(label='File', menu=file_menu)
         settings_menu = Menu(menu_bar)
         preset_menu = Menu(settings_menu)
         preset_menu.add_command(label='Open Presets', command=self.open_settings)
         preset_menu.add_command(label='Set Presets', command=self.set_presets)
-        preset_menu.add_command(label='Reset to Presets', command=self.set_entry)
+        preset_menu.add_command(label='Reset to Presets', command=self.reset_to_preset)
         settings_menu.add_cascade(label='Presets', menu=preset_menu, underline=0)
         menu_bar.add_cascade(label='Settings', menu=settings_menu)
         menu_bar.add_command(label='About')
@@ -179,8 +181,16 @@ class ScarberryGui:
     def open_settings(self):
         subprocess.Popen(["notepad.exe", Main.settings_file_directory])
 
-    def set_entry(self):
-        settings = Main.get_settings_dic(["Main","Arduino", "XimeaClient", "ProcessImage"])
+    def open_images(self):
+        path = subprocess.check_output(["echo", "%cd%"], shell=True)
+        path = path[:len(path) - 2]
+        path += "\\images"
+        subprocess.Popen(["explorer.exe", "{}".format(path)])
+
+    def reset_to_preset(self):
+        self.set_entry(Main.get_settings_dic(['Main','Arduino','XimeaClient','ProcessImage']))
+
+    def set_entry(self,settings):
         main_values = settings.get("Main")
         arduino_values = settings.get("Arduino")
         camera_values = settings.get("XimeaClient")
@@ -206,20 +216,18 @@ class ScarberryGui:
         self.contour_pic.set(process_values[3])
         self.contour_pic_box = Checkbutton(self.content, text='Contour Pic', variable=self.contour_pic)
 
-    def set_main_values(self):
+    def get_entry_values_dic(self):
         new_main_values = [1, self.runtime.get()]
-        new_arduino_values = [self.com.get(), self.framerate.get(), self.strobecount.get(),(float(self.dutycycle.get())) / 100]
+        new_arduino_values = [self.com.get(), self.framerate.get(), self.strobecount.get(),float('.' + self.dutycycle.get())]
         new_camera_values = [self.gain.get()]
         new_process_values = [self.blur.get(), self.thresh.get(), self.save_pic.get(), self.contour_pic.get()]
-        Main.set_values(new_main_values, new_arduino_values, new_camera_values, new_process_values)
+        return {'Main':new_main_values,'Arduino':new_arduino_values,'XimeaClient':new_camera_values,'ProcessImage':new_process_values}
 
     def set_presets(self):
-        self.set_main_values()
-        Main.save_settings()
+        Main.save_settings(self.get_entry_values_dic())
 
     def start_main(self):
-        self.set_main_values()
-        Main.start_threads(self)
+        Main.start_threads(self.get_entry_values_dic(),gui=self)
 
 def choose_print(gui, text, string):
     widget = None
@@ -235,9 +243,3 @@ def choose_print(gui, text, string):
         widget.config(state="normal")
         widget.insert('0.0', '{}\n'.format(string))
         widget.config(state=DISABLED)
-
-def main():
-    gui = ScarberryGui(None)
-
-if __name__ == '__main__':
-    main()

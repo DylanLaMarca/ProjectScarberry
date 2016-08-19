@@ -19,14 +19,3 @@ class ArduinoController:
         self.ser.write('{}'.format(value))
         time.sleep(pause)
         Interface.choose_print(self.gui, 'arduino', 'Wrote: {}'.format(value))
-
-def main():
-    sleep = 2
-    controller = ArduinoController(6)
-    controller.write_value(5, sleep)
-    controller.write_value(6, sleep)
-    controller.write_value(.5, sleep)
-    controller.write_value(1, 0)
-
-if __name__ == "__main__":
-    main()

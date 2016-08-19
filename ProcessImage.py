@@ -98,13 +98,3 @@ class ProcessImage:
             print
         else:
             gui.print_to_process_text(text)
-
-def main():
-    file_path = 'images\\examples\\20-20-.5\\image119.jpg'
-    filename = 'image119'
-    for count in range(25):
-        image = cv2.imread(file_path)
-        ProcessImage.draw_rois(image,'images\\{}rois{}.png'.format(filename,(count*10)+10),11,(count*10)+10)
-
-if __name__ == "__main__":
-    main()
