@@ -146,7 +146,7 @@ class ScarberryGui:
         self.contour_pic_box.pack()
 
     def format_buttons(self):
-        start_button = Button(self.content, text='   Start   ', command=self.start_main)
+        start_button = Button(self.content, text='   Start   ', command=lambda:Main.start_threads(self.get_entry_values_dic(),gui=self))
         start_button.pack()
         self.west_list.append(start_button)
         abort_button = Button(self.content, text='   Abort   ')
@@ -227,7 +227,7 @@ class ScarberryGui:
         Main.save_settings(self.get_entry_values_dic())
 
     def start_main(self):
-        Main.start_threads(self.get_entry_values_dic(),gui=self)
+        pass
 
 def choose_print(gui, text, string):
     widget = None

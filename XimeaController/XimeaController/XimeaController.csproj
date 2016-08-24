@@ -44,8 +44,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
-    <Reference Include="xiApi.NET, Version=4.11.3.0, Culture=neutral, PublicKeyToken=7b310f24f64a81fc, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="xiApi.NET">
       <HintPath>API\x86\xiApi.NET.dll</HintPath>
     </Reference>
   </ItemGroup>

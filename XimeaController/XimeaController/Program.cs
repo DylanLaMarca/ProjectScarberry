@@ -6,7 +6,6 @@ using System.Threading;
 using xiApi.NET;
 using System.IO.Pipes;
 using System.Drawing.Imaging;
-using System.Collections.Generic;
 
 namespace xiAPI.NET_example
 {
@@ -17,13 +16,16 @@ namespace xiAPI.NET_example
         private static readonly int PAUSE_TIME = 3000;
 
         private static ManualResetEvent sendPauseEvent = new ManualResetEvent(false);
-        private static Queue<Bitmap> images = new Queue<Bitmap>();
+        private static Bitmap[] images;
         private static bool formatCameraComplete = false;
         private static bool formatPipeComplete = false;
+        private static bool formatImageListComplete = false;
         private static bool run = true;
+        private static int approximatePicCount;
         private static int exposure;
         private static int timeout;
         private static float gain;
+        private static int imageCount;
 
         private static NamedPipeServerStream server;
         private static BinaryWriter pipeWriter;
@@ -48,32 +50,37 @@ namespace xiAPI.NET_example
                 {
                     formatCamera();
                     formatCameraComplete = true;
-                    Bitmap safeImage = createSafeBitmap();
+                    while (!formatImageListComplete) { }
                     myCam.SetParam(PRM.BUFFER_POLICY, BUFF_POLICY.SAFE);
                     myCam.StartAcquisition();
-                    int count = 0;
+                    imageCount = 0;
                     while (run)
                     {
-                        Console.WriteLine("Capturing image {0} with safe buffer policy",count);
-                        myCam.GetImage(safeImage, timeout);
-                        images.Enqueue(new Bitmap(safeImage));
+                        Console.WriteLine("Capturing image {0} with safe buffer policy", imageCount);
+                        myCam.GetImage(images[imageCount], timeout);
                         sendPauseEvent.Set();
-                        count++;
+                        imageCount++;
                     }
-                    myCam.StopAcquisition();
                 }
                 catch (ApplicationException appExc)
                 {
+                    int counterValue;
+                    myCam.GetParam(PRM.COUNTER_VALUE, out counterValue);
+                    Console.WriteLine("Skipped Frames: {0}", counterValue);
+                    myCam.StopAcquisition();
                     Console.WriteLine("AppErr: {0}", appExc.Message);
                     myCam.CloseDevice();
                 }
             }
             catch (ThreadAbortException threadExc)
             {
+                int counterValue;
+                myCam.GetParam(PRM.COUNTER_VALUE, out counterValue);
+                Console.WriteLine("Skipped Frames: {0}", counterValue);
+                myCam.StopAcquisition();
                 Console.WriteLine("ThreadErr: {0}", threadExc.Message);
                 myCam.CloseDevice();
             }
-
             run = false;
             sendPauseEvent.Set();
             Thread.Sleep(250);
@@ -124,74 +131,93 @@ namespace xiAPI.NET_example
             Console.WriteLine("Setting GPO Mode to active exposure.");
             myCam.SetParam(PRM.GPO_SELECTOR, 1);
             myCam.SetParam(PRM.GPO_MODE, GPO_MODE.EXPOSURE_ACTIVE);
-
-            // Set image output format to monochrome 8 bit
+            
             myCam.SetParam(PRM.IMAGE_DATA_FORMAT, IMG_FORMAT.MONO8);
+
+            int maxBandwidth;
+            myCam.GetParam(PRM.AVAILABLE_BANDWIDTH_MAX, out maxBandwidth);
+            Console.WriteLine("Max Framerate: {0}", maxBandwidth);
+
+            myCam.SetParam(PRM.AUTO_BANDWIDTH_CALCULATION, 0);
+
+            int automaticBusSpeed;
+            myCam.GetParam(PRM.AUTO_BANDWIDTH_CALCULATION, out automaticBusSpeed);
+            Console.WriteLine("Bus Speed: {0}", automaticBusSpeed);
+
+            myCam.SetParam(PRM.COUNTER_SELECTOR, COUNTER_SELECTOR.CNT_SEL_API_SKIPPED_FRAMES);
         }
 
         static void pipeThread()
         {
-
             try
             {
-                formatPipe();
-                exposure = 49000;
-                gain = 1;
-                timeout = 5000;
-                formatPipeComplete = true;
-                while (!formatCameraComplete) { }
-                int count = 0;
-                while (run)
+                try
                 {
-                    while (images.Count > 0)
+                    formatPipe();
+                    timeout = 20000;
+                    formatPipeComplete = true;
+                    while (!formatCameraComplete) { }
+                    formatImageList();
+                    formatImageListComplete = true;
+                    int count = 0;
+                    while (run)
                     {
-                        byte[] imageBytes = formatStringToPipe(images.Dequeue());
-                        pipeWriter.Write((uint)imageBytes.Length);
-                        pipeWriter.Write(imageBytes);
-                        count++;
+                        while (count < imageCount)
+                        {
+                            byte[] imageBytes = formatStringToPipe(images[count]);
+                            Console.WriteLine("=========={0}", imageBytes.Length);
+                            pipeWriter.Write((uint)imageBytes.Length);
+                            pipeWriter.Write(imageBytes);
+                            count++;
+                        }
+                        Console.WriteLine("sendThread: Wait");
+                        sendPauseEvent.WaitOne();
+                        sendPauseEvent.Reset();
+                        Console.WriteLine("sendThread: Released");
                     }
-                    Console.WriteLine("sendThread: Wait");
-                    sendPauseEvent.WaitOne();
-                    sendPauseEvent.Reset();
-                    Console.WriteLine("sendThread: Released");
                 }
+                catch (EndOfStreamException) { }
+                Console.WriteLine("Client disconnected.");
+                server.Close();
+                server.Dispose();
+                captureThread.Abort();
             }
-            catch (EndOfStreamException) { }
-            Console.WriteLine("Client disconnected.");
-            server.Close();
-            server.Dispose();
-            captureThread.Abort();
+            catch (ThreadAbortException threadExc)
+            {
+                Console.WriteLine("ThreadAbortException: {0}", threadExc.Message);
+            }
         }
 
         static void formatPipe()
         {
-            // Open the named pipe.
             server = new NamedPipeServerStream(PIPE_NAME);
             Console.WriteLine("Waiting for client connection...");
             server.WaitForConnection();
             Console.WriteLine("Client connected.");
             pipeWriter = new BinaryWriter(server);
             pipeReader = new BinaryReader(server);
-
-            exposure = getPipedInt();
-            gain = getPipedInt();
-            //timeout = getPipedInt();
+            exposure = (int)pipeReader.ReadUInt32();
+            gain = (int)pipeReader.ReadUInt32();
+            approximatePicCount = (int)pipeReader.ReadUInt32();
         }
 
-        static int getPipedInt()
+        static void formatImageList()
         {
-            return (int)pipeReader.ReadUInt32();
-        }
-
-        static Bitmap createSafeBitmap()
-        {
+            Console.WriteLine("ImageList Length: {0}", approximatePicCount);
+            images = new Bitmap[approximatePicCount];
             int width = 0, height = 0;
             // image width must be divisible by 4
             myCam.GetParam(PRM.WIDTH, out width);
-            myCam.SetParam(PRM.WIDTH, width - (width % 4));
+            myCam.SetParam(PRM.WIDTH, (width - (width % 4))/4);
             myCam.GetParam(PRM.WIDTH, out width);
             myCam.GetParam(PRM.HEIGHT, out height);
-            return new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+            myCam.SetParam(PRM.HEIGHT, (height - (height % 4))/4);
+            myCam.GetParam(PRM.HEIGHT, out height);
+            for (int count = 0; count < approximatePicCount; count++)
+            {
+                Console.WriteLine("ImageList adding SafeBitmap {0}", count);
+                images[count] = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+            }
         }
 
         static byte[] formatStringToPipe(Image image)
