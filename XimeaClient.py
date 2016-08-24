@@ -8,7 +8,6 @@ class XimeaClient:
     pipe = None
     gui = None
     pipe_name = 'XimeaPipe'
-    image_direcoty = 'images'
 
     def __init__(self,framerate,gain,run_time,gui):
         self.gui = gui
@@ -32,8 +31,12 @@ class XimeaClient:
         image = base64.b64decode(pipe_input)
         return image
 
-def save_image(imgdata,number='',image_direcoty='images'):
-    with open('{}\\rawXimeaimage_{}.jpg'.format(image_direcoty, number), 'wb') as file:
+def save_image(imgdata,number='',image_direcoty='images',name='rawXimeaimage',padding=5,extention='.jpg'):
+    formated_number = ''
+    for count in range(int(padding)-len(str(number))):
+        formated_number += '0'
+    formated_number+=str(number)
+    with open('{}\\{}_{}{}'.format(image_direcoty,name,formated_number,extention),'wb') as file:
         file.write(imgdata)
 
 def save_all_images(all_images):

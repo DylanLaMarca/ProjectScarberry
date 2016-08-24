@@ -78,7 +78,12 @@ def process_worker(queue,process_values,trigger,gui=None):
         while not queue.empty():
             pic = queue.get()
             Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(count,(hash(pic))))
-            XimeaClient.save_image(pic,number=count)
+            XimeaClient.save_image(pic,
+                                   number=count,
+                                   image_direcoty=process_values[2],
+                                   name=process_values[3],
+                                   padding=process_values[4],
+                                   extention=process_values[5])
             count += 1
     Interface.choose_print(gui, 'process', 'ProcessImageThread: Finished')
 
@@ -91,9 +96,25 @@ def start_threads(settings,gui=None):
     trigger_master.register('startCamera', False)
     trigger_master.register('runProcess', True)
     trigger_master.register('runCamera', True)
-    arduino = threading.Thread(name="ArduinoThread",target=arduino_worker,args=(arduino_values,main_values,trigger_master),kwargs={'gui':gui})
-    camera = threading.Thread(name="XimeaClientThread", target=camera_worker,args=(pic_queue,settings.get("XimeaClient"),arduino_values,main_values,trigger_master),kwargs={'gui':gui})
-    process = threading.Thread(name="ProcessImageThread", target=process_worker,args=(pic_queue,settings.get("ProcessImage"),trigger_master),kwargs={'gui':gui})
+    arduino = threading.Thread(name="ArduinoThread",
+                               target=arduino_worker,
+                               args=(arduino_values,
+                                     main_values,
+                                     trigger_master),
+                               kwargs={'gui':gui})
+    camera = threading.Thread(name="XimeaClientThread",
+                              target=camera_worker,
+                              args=(pic_queue,settings.get("XimeaClient"),
+                                    arduino_values,
+                                    main_values,
+                                    trigger_master),
+                              kwargs={'gui':gui})
+    process = threading.Thread(name="ProcessImageThread",
+                               target=process_worker,
+                               args=(pic_queue,
+                                     settings.get("ProcessImage"),
+                                     trigger_master),
+                               kwargs={'gui':gui})
     arduino.start()
     camera.start()
     process.start()
