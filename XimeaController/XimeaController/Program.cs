@@ -213,11 +213,17 @@ namespace xiAPI.NET_example
             myCam.GetParam(PRM.HEIGHT, out height);
             myCam.SetParam(PRM.HEIGHT, (height - (height % 4))/4);
             myCam.GetParam(PRM.HEIGHT, out height);
+            Console.Write("ImageList adding SafeBitmap ");
             for (int count = 0; count < approximatePicCount; count++)
             {
-                Console.WriteLine("ImageList adding SafeBitmap {0}", count);
+                Console.Write("{0},",count);
                 images[count] = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+                if(count % 10 == 0)
+                {
+                    Console.WriteLine();
+                }
             }
+            Console.WriteLine();
         }
 
         static byte[] formatStringToPipe(Image image)

@@ -73,6 +73,7 @@ class ScarberryGui:
         self.master.config(menu=menu_bar)
         file_menu = Menu(menu_bar)
         file_menu.add_command(label='Open Images',command=self.open_images)
+        file_menu.add_command(label='Open Data',command=self.open_data)
         file_menu.add_command(label='Exit')
         menu_bar.add_cascade(label='File', menu=file_menu)
         settings_menu = Menu(menu_bar)
@@ -145,6 +146,9 @@ class ScarberryGui:
         print self.image_directory
         subprocess.Popen(["explorer.exe", "{}".format(self.image_directory.replace('/','\\'))])#"""{}".format(self.image_directory)])
 
+    def open_data(self):
+        print self.image_directory + '/data'
+        subprocess.Popen(["explorer.exe", "{}\\data".format(self.image_directory.replace('/','\\'))])#"""{}".format(self.image_directory)])
     def reset_to_preset(self):
         self.set_entry(Main.get_settings_dic(['Main','Arduino','XimeaClient','ProcessImage']))
 

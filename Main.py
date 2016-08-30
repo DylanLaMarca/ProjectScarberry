@@ -73,18 +73,29 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
     Interface.choose_print(gui, 'camera', 'XimeaClientThread: Finished')
 
 def process_worker(queue,process_values,trigger,gui=None):
-    count = 0
+    pic_count = 0
     while trigger.get(name='runProcess'):
         while not queue.empty():
             pic = queue.get()
-            Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(count,(hash(pic))))
-            XimeaClient.save_image(pic,
-                                   number=count,
-                                   image_direcoty=process_values[2],
-                                   name=process_values[3],
-                                   padding=process_values[4],
-                                   extention=process_values[5])
-            count += 1
+            Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(pic_count,(hash(pic))))
+            opencv_pic = ProcessImage.convert_to_cv(pic)
+            formated_number = ProcessImage.format_number(pic_count,int(process_values[4]))
+            ProcessImage.save_image(opencv_pic,
+                                    formated_number,
+                                    image_direcoty=process_values[2],
+                                    name=process_values[3],
+                                    extention=process_values[5])
+            ProcessImage.draw_and_data(opencv_pic,
+                              '{}\\data\\data-{}_{}{}'.format(process_values[2],
+                                                              process_values[3],
+                                                              formated_number,
+                                                              process_values[5]),
+                              '{}\\data\\data-{}_{}{}'.format(process_values[2],
+                                                              process_values[3],
+                                                              formated_number,
+                                                              '.txt'),
+                              11,100,draw_rois=True,draw_centroid=True,draw_count=True)
+            pic_count += 1
     Interface.choose_print(gui, 'process', 'ProcessImageThread: Finished')
 
 def start_threads(settings,gui=None):

@@ -28,7 +28,7 @@ class XimeaClient:
         print '----------{}'.format(image_length)
         pipe_input = self.pipe.read(image_length)
         self.pipe.seek(0)
-        image = base64.b64decode(pipe_input)
+        image = pipe_input
         return image
 
 def save_image(imgdata,number='',image_direcoty='images',name='rawXimeaimage',padding=5,extention='.jpg'):
