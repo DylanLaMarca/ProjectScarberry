@@ -98,7 +98,6 @@ def process_worker(queue,process_values,trigger,gui=None):
                                                             process_values.get("BaseName"),
                                                             formated_number,
                                                             '.txt')
-            print '-------{}'.format(data_filename)
             if process_values.get("SaveDraw"):
                 ProcessImage.draw_and_data(opencv_pic,
                                   '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),

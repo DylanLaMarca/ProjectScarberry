@@ -25,13 +25,11 @@ class ScarberryGui:
     draw_centroid = None
     draw_vector = None
     draw_count = None
-    arduino_controller_frame = None
     arduino_controller_text = None
-    ximea_client_frame = None
     ximea_client_text = None
-    process_image_frame = None
     process_image_text = None
-    element_list = []
+    option_elements = []
+    text_elements = []
 
     def __init__(self):
         self.master = Tk()
@@ -63,8 +61,8 @@ class ScarberryGui:
         frame.grid(column=0, row=0, columnspan=columns, rowspan=rows)
         extender.grid(column=0, row=0,sticky=W)
         list_count = 0
-        for element in self.element_list:
-            element.grid(list_count,0)
+        for option in self.option_elements:
+            option.grid(list_count,0)
             list_count+=1
 
         self.draw = ScarberryGui.CheckBoxElement(self.content,"Draw: ",5,W)
@@ -81,9 +79,11 @@ class ScarberryGui:
         directory_button.grid(column=0, row=list_count+3, padx=5)
         start_button.grid(column=0, row=list_count+4, sticky=W, padx=5)
         abort_button.grid(column=0, row=list_count+4, sticky=E, padx=5)
-        self.arduino_controller_frame.grid(column=1,row=0,columnspan=2,rowspan=rows,sticky=N,)
-        self.ximea_client_frame.grid(column=1+(columns/3),row=0,columnspan=2,rowspan=rows,sticky=N)
-        self.process_image_frame.grid(column=1+((columns/3)*2),row=0,columnspan=2,rowspan=rows,sticky=N)
+
+        count = 0
+        for text in self.text_elements:
+            text.grid(1+((columns/3)*count),rows)
+            count += 1
 
     def format_menu(self):
         menu_bar = Menu(self.master, tearoff=0)
@@ -111,40 +111,34 @@ class ScarberryGui:
         self.thresh = ScarberryGui.EntryElement(self.content,'Thresh Limit:  ',5)
         self.name = ScarberryGui.EntryElement(self.content,'Pic Name:  ',12)
         self.padding = ScarberryGui.EntryElement(self.content,'Num Padding: ',3)
-        self.element_list.extend([self.com,
-                                  self.runtime,
-                                  self.framerate,
-                                  self.strobecount,
-                                  self.dutycycle,
-                                  self.thresh,
-                                  self.name,
-                                  self.padding])
+        self.option_elements.extend([self.com,
+                                     self.runtime,
+                                     self.framerate,
+                                     self.strobecount,
+                                     self.dutycycle,
+                                     self.thresh,
+                                     self.name,
+                                     self.padding])
 
     def format_optionmenus(self):
         self.extension = ScarberryGui.OptionMenuElement(self.content,self.master,'Pic Extension: ',['.TIF','.png','.jpg','.gif'])
         self.blur = ScarberryGui.OptionMenuElement(self.content,self.master,'Blur Val: ',self.generate_optionmenu_elements(15, 3, 2))
         self.gain = ScarberryGui.OptionMenuElement(self.content,self.master,'Gain Val:  ',self.generate_optionmenu_elements(7, 0, 1))
         self.shrink = ScarberryGui.OptionMenuElement(self.content,self.master,'Shrink Val:  ',['1','2','4','8','16','32'])
-        self.element_list.extend([self.extension,
-                                  self.blur,
-                                  self.gain,
-                                  self.shrink])
+        self.option_elements.extend([self.extension,
+                                     self.blur,
+                                     self.gain,
+                                     self.shrink])
 
     def format_texts(self):
         text_height = 25
         text_width = 30
-        self.arduino_controller_frame = LabelFrame(self.content, text='ArduinoController', padx=5, pady=5)
-        self.arduino_controller_text = Text(self.arduino_controller_frame, height=text_height, width=text_width)
-        self.arduino_controller_text.config(state=DISABLED)
-        self.arduino_controller_text.pack()
-        self.ximea_client_frame = LabelFrame(self.content, text='XimeaClient', padx=5, pady=5)
-        self.ximea_client_text = Text(self.ximea_client_frame, height=text_height, width=text_width)
-        self.ximea_client_text.config(state=DISABLED)
-        self.ximea_client_text.pack()
-        self.process_image_frame = LabelFrame(self.content, text='ProcessImage', padx=5, pady=5)
-        self.process_image_text = Text(self.process_image_frame, height=text_height, width=text_width)
-        self.process_image_text.config(state=DISABLED)
-        self.process_image_text.pack()
+        self.arduino_controller_text = ScarberryGui.TextElement(self.content,'ArduinoController',text_height,text_width)
+        self.ximea_client_text = ScarberryGui.TextElement(self.content,'XimeaClient',text_height,text_width)
+        self.process_image_text = ScarberryGui.TextElement(self.content, 'ProcessImage',text_height,text_width)
+        self.text_elements = [self.arduino_controller_text,
+                              self.ximea_client_text,
+                              self.process_image_text]
 
     def start(self):
         self.master.mainloop()
@@ -245,7 +239,6 @@ class ScarberryGui:
             self.value = StringVar()
             self.label = Label(content, text=title)
             self.entry = Entry(content, width=width, textvariable=self.value)
-
         def grid(self,row,column):
             self.label.grid(column=column, row=row, sticky=W, padx=5)
             self.entry.grid(column=column, row=row, sticky=E, padx=5)
@@ -261,7 +254,6 @@ class ScarberryGui:
             self.label = Label(content, text=title)
             self.menu = apply(OptionMenu, (content, self.value) + tuple(self.options))
             self.menu.pack()
-
         def grid(self, row, column):
             self.label.grid(column=column, row=row, sticky=W, padx=5)
             self.menu.grid(column=column, row=row, sticky=E, padx=5)
@@ -271,16 +263,25 @@ class ScarberryGui:
         check_box = None
         padx = None
         sticky = None
-
         def __init__(self,content,title,padx,sticky):
             self.padx = padx
             self.sticky = sticky
             self.value = IntVar()
             self.check_box = Checkbutton(content, text=title,variable=self.value)
             self.check_box.pack()
-
         def grid(self,row,column):
             self.check_box.grid(column=column, row=row, sticky=self.sticky, padx=self.padx)
+
+    class TextElement:
+        frame = None
+        text = None
+        def __init__(self,content,title,height,width):
+            self.frame = LabelFrame(content, text=title, padx=5, pady=5)
+            self.text = Text(self.frame, height=height, width=width)
+            self.text.config(state=DISABLED)
+            self.text.pack()
+        def grid(self,column,rows):
+            self.frame.grid(column=column,row=0,columnspan=2,rowspan=rows,sticky=N)
 
 def choose_print(gui, text, string):
     widget = None
@@ -288,11 +289,11 @@ def choose_print(gui, text, string):
         print string
     else:
         if text == 'arduino':
-            widget = gui.arduino_controller_text
+            widget = gui.arduino_controller_text.text
         elif text == 'camera':
-            widget = gui.ximea_client_text
+            widget = gui.ximea_client_text.text
         elif text == 'process':
-            widget = gui.process_image_text
+            widget = gui.process_image_text.text
         widget.config(state="normal")
         widget.insert('0.0', '{}\n'.format(string))
         widget.config(state=DISABLED)

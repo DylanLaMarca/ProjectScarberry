@@ -18,18 +18,9 @@ def format_number(number,padding):
 
 def get_contours(image, blur_val, thresh_val):
     blur = cv2.GaussianBlur(image,(int(blur_val),int(blur_val)),0)
-    #show_image(blur)
-    #grey_image = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-    #show_image(grey_image)
     ret, thresh = cv2.threshold(blur,int(thresh_val),255,cv2.THRESH_BINARY)
-    #show_image(thresh)
     im2, contours, hierarchy = cv2.findContours(thresh, 1, 2)
     return contours
-
-def show_image(image):
-    cv2.imshow('image', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 def get_data(image,blur_val,thresh_val):
     contours = get_contours(image, blur_val, thresh_val)
@@ -54,10 +45,11 @@ def get_data(image,blur_val,thresh_val):
             MA = 0
             ma = 0
             angle = 0
-            try:
-                (x, y), (MA, ma), angle = cv2.fitEllipse(contour)
-            except cv2.error:
-                pass
+            if len(contour) > 5:
+                try:
+                    (x, y), (MA, ma), angle = cv2.fitEllipse(contour)
+                except cv2.error:
+                    pass
             current_roi['Axes'] = {'Major Axis':MA,'Minor Axis':ma}
             current_roi['Direction'] = angle
             data.append(current_roi)
@@ -126,16 +118,19 @@ def save_data(data,file_name):
     count = 0
     for contour in data:
         file.write('Contour Cluster {}:\n'.format(count))
-        file.write('    Centroid: {}\n'.format(contour.get('Centroid')))
-        file.write('    Axes:\n')
-        file.write('        Major Axis: {}\n'.format(contour.get('Axes').get('Major Axis')))
-        file.write('        Minor Axis: {}\n'.format(contour.get('Axes').get('Minor Axis')))
-        file.write('    Direction: {}\n'.format(contour.get('Direction')))
-        file.write('    ApproximatePerimeter: {}\n'.format(contour.get('ApproximatePerimeter')))
-        file.write('    Vector:\n')
-        file.write('        x:  {}\n'.format(contour.get('Vector').get('x')))
-        file.write('        y:  {}\n'.format(contour.get('Vector').get('y')))
-        file.write('        vx: {}\n'.format(contour.get('Vector').get('vx')))
-        file.write('        vy: {}\n'.format(contour.get('Vector').get('vy')))
+        for key in contour.keys():
+            current_value = contour.get(key)
+            format_data_dict(file,current_value,key,1)
         count+=1
     file.close()
+
+def format_data_dict(file,value,key,indent):
+    dict = {}
+    for count in range(indent):
+        file.write('    ')
+    if type(value) == type(dict):
+        file.write('{}:\n'.format(key))
+        for sub_key in value.keys():
+            format_data_dict(file,value.get(sub_key), sub_key, indent+1)
+    else:
+        file.write('{}: {}\n'.format(key, value))
