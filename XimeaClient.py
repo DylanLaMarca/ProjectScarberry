@@ -1,5 +1,4 @@
 import struct
-import base64
 import numpy
 import Interface
 import math
@@ -28,18 +27,4 @@ class XimeaClient:
         print '----------{}'.format(image_length)
         pipe_input = self.pipe.read(image_length)
         self.pipe.seek(0)
-        image = pipe_input
-        return image
-
-def save_image(imgdata,number='',image_direcoty='images',name='rawXimeaimage',padding=5,extention='.jpg'):
-    formated_number = ''
-    for count in range(int(padding)-len(str(number))):
-        formated_number += '0'
-    formated_number+=str(number)
-    with open('{}\\{}_{}{}'.format(image_direcoty,name,formated_number,extention),'wb') as file:
-        file.write(imgdata)
-
-def save_all_images(all_images):
-    count = 0
-    for image in all_images:
-        XimeaClient.save_image(image,count)
+        return pipe_input

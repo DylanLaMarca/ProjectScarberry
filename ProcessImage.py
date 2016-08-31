@@ -17,7 +17,6 @@ def format_number(number,padding):
         formated_number += '0'
     return formated_number + str(number)
 
-
 def get_contours(image, blur_val, thresh_val):
     blur = cv2.GaussianBlur(image,(int(blur_val),int(blur_val)),0)
     #show_image(blur)
@@ -65,7 +64,7 @@ def get_data(image,blur_val,thresh_val):
             data.append(current_roi)
     return data
 
-def draw_and_data(image, new_image_filename, data_filename, blur_val, thresh_val, draw_rois=False, draw_centroid=False, draw_count=False, draw_vectors=False, colour=(0, 0, 255)):
+def draw_and_data(image, new_image_filename, data_filename, blur_val, thresh_val, draw_rois=False, draw_centroid=False, draw_count=False, draw_vectors=False):
     out_image = cv2.cvtColor(image, cv2.COLOR_BAYER_GR2RGB)
     contours = get_contours(image, blur_val, thresh_val)
     data = []
@@ -141,9 +140,3 @@ def save_data(data,file_name):
         file.write('        vy: {}\n'.format(contour.get('Vector').get('vy')))
         count+=1
     file.close()
-
-def main():
-    pass
-
-if __name__ == "__main__":
-    main()

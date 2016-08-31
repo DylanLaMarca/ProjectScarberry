@@ -208,10 +208,10 @@ namespace xiAPI.NET_example
             int width = 0, height = 0;
             // image width must be divisible by 4
             myCam.GetParam(PRM.WIDTH, out width);
-            myCam.SetParam(PRM.WIDTH, (width - (width % 4))/4);
+            myCam.SetParam(PRM.WIDTH, (width - (width % 4))/2);
             myCam.GetParam(PRM.WIDTH, out width);
             myCam.GetParam(PRM.HEIGHT, out height);
-            myCam.SetParam(PRM.HEIGHT, (height - (height % 4))/4);
+            myCam.SetParam(PRM.HEIGHT, (height - (height % 4))/2);
             myCam.GetParam(PRM.HEIGHT, out height);
             Console.Write("ImageList adding SafeBitmap ");
             for (int count = 0; count < approximatePicCount; count++)
