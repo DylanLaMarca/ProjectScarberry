@@ -51,7 +51,7 @@ class ScarberryGui:
         directory_button.pack()
         start_button = Button(self.content,
                               text='   Start   ',
-                              command=lambda:Main.start_threads(self.get_entry_values_dic(),gui=self))
+                              command=lambda:Main.start_threads(self.get_entry_values_dict(), gui=self))
         start_button.pack()
         abort_button = Button(self.content, text='   Abort   ',)
         abort_button.pack()
@@ -66,7 +66,6 @@ class ScarberryGui:
         for element in self.element_list:
             element.grid(list_count,0)
             list_count+=1
-
 
         self.draw = ScarberryGui.CheckBoxElement(self.content,"Draw: ",5,W)
         self.draw.grid(list_count,0)
@@ -169,71 +168,74 @@ class ScarberryGui:
     def open_data(self):
         print self.image_directory + '/data'
         subprocess.Popen(["explorer.exe", "{}\\data".format(self.image_directory.replace('/','\\'))])#"""{}".format(self.image_directory)])
+
     def reset_to_preset(self):
-        self.set_entry(Main.get_settings_dic(['Main','Arduino','XimeaClient','ProcessImage']))
+        self.set_entry(Main.get_settings_dict(['Main', 'Arduino', 'XimeaClient', 'ProcessImage']))
 
     def set_entry(self,settings):
         main_values = settings.get("Main")
         arduino_values = settings.get("Arduino")
         camera_values = settings.get("XimeaClient")
         process_values = settings.get("ProcessImage")
-        self.image_directory = process_values[2]
+        self.image_directory = process_values.get("ImageDirectory")
         self.com.entry.delete(0,END)
-        self.com.entry.insert(0,arduino_values[0])
+        self.com.entry.insert(0,arduino_values.get("SerialPort"))
         self.runtime.entry.delete(0, END)
-        self.runtime.entry.insert(0,main_values[1])
+        self.runtime.entry.insert(0,main_values.get("RunTime"))
         self.framerate.entry.delete(0, END)
-        self.framerate.entry.insert(0,arduino_values[1])
+        self.framerate.entry.insert(0,arduino_values.get("FrameRate"))
         self.strobecount.entry.delete(0, END)
-        self.strobecount.entry.insert(0,arduino_values[2])
+        self.strobecount.entry.insert(0,arduino_values.get("StrobeCount"))
         self.dutycycle.entry.delete(0, END)
-        self.dutycycle.entry.insert(0,(arduino_values[3])[arduino_values[3].index('.')+1:])
+        raw_dutycycle = arduino_values.get("DutyCycle")
+        self.dutycycle.entry.insert(0,(raw_dutycycle)[raw_dutycycle.index('.')+1:])
         self.thresh.entry.delete(0, END)
-        self.thresh.entry.insert(0,process_values[1])
+        self.thresh.entry.insert(0,process_values.get("ThreshLimit"))
         self.name.entry.delete(0, END)
-        self.name.entry.insert(0, process_values[3])
+        self.name.entry.insert(0, process_values.get("BaseName"))
         self.padding.entry.delete(0, END)
-        self.padding.entry.insert(0, process_values[4])
-        self.extension.value.set(process_values[5])
+        self.padding.entry.insert(0, process_values.get("NumberPadding"))
+        self.extension.value.set(process_values.get("FileExtension"))
         self.extension.menu = apply(OptionMenu, (self.content, self.extension) + tuple(self.extension.options))
-        self.blur.value.set(process_values[0])
+        self.blur.value.set(process_values.get("BlurValue"))
         self.blur.menu = apply(OptionMenu, (self.content, self.blur) + tuple(self.blur.options))
-        self.gain.value.set(camera_values[0])
+        self.gain.value.set(camera_values.get("Gain"))
         self.gain.menu = apply(OptionMenu, (self.content, self.gain) + tuple(self.gain.options))
-        self.shrink.value.set(camera_values[1])
+        self.shrink.value.set(camera_values.get("ShrinkQuotient"))
         self.shrink.menu = apply(OptionMenu, (self.content, self.shrink) + tuple(self.shrink.options))
-        self.draw.value.set(process_values[6])
-        self.draw_roi.value.set(process_values[7])
-        self.draw_centroid.value.set(process_values[8])
-        self.draw_vector.value.set(process_values[9])
-        self.draw_count.value.set(process_values[10])
+        self.draw.value.set(process_values.get("SaveDraw"))
+        self.draw_roi.value.set(process_values.get("DrawROIs"))
+        self.draw_centroid.value.set(process_values.get("DrawCentroid"))
+        self.draw_vector.value.set(process_values.get("DrawVector"))
+        self.draw_count.value.set(process_values.get("DrawCount"))
 
-    def get_entry_values_dic(self):
-        new_main_values = [1, self.runtime.value.get()]
-        new_arduino_values = [self.com.value.get(),
-                              self.framerate.value.get(),
-                              self.strobecount.value.get(),
-                              float('.' + self.dutycycle.value.get())]
-        new_camera_values = [self.gain.value.get(),
-                             self.shrink.value.get()]
-        new_process_values = [self.blur.value.get(),
-                              self.thresh.value.get(),
-                              self.image_directory,
-                              self.name.value.get(),
-                              self.padding.value.get(),
-                              self.extension.value.get(),
-                              self.draw.value.get(),
-                              self.draw_roi.value.get(),
-                              self.draw_centroid.value.get(),
-                              self.draw_vector.value.get(),
-                              self.draw_count.value.get()]
+    def get_entry_values_dict(self):
+        new_main_values = {"UseInterface":1,
+                           "RunTime":self.runtime.value.get()}
+        new_arduino_values = {"SerialPort":self.com.value.get(),
+                              "FrameRate":self.framerate.value.get(),
+                              "StrobeCount":self.strobecount.value.get(),
+                              "DutyCycle":float('.' + self.dutycycle.value.get())}
+        new_camera_values = {"Gain":self.gain.value.get(),
+                             "ShrinkQuotient":self.shrink.value.get()}
+        new_process_values = {"BlurValue":self.blur.value.get(),
+                              "ThreshLimit":self.thresh.value.get(),
+                              "ImageDirectory":self.image_directory,
+                              "BaseName":self.name.value.get(),
+                              "NumberPadding":self.padding.value.get(),
+                              "FileExtension":self.extension.value.get(),
+                              "SaveDraw":self.draw.value.get(),
+                              "DrawROIs":self.draw_roi.value.get(),
+                              "DrawCentroid":self.draw_centroid.value.get(),
+                              "DrawVector":self.draw_vector.value.get(),
+                              "DrawCount":self.draw_count.value.get()}
         return {'Main':new_main_values,
                 'Arduino':new_arduino_values,
                 'XimeaClient':new_camera_values,
                 'ProcessImage':new_process_values}
 
     def set_presets(self):
-        Main.save_settings(self.get_entry_values_dic())
+        Main.save_settings(self.get_entry_values_dict())
 
     class EntryElement:
         value = None
