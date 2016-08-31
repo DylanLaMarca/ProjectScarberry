@@ -26,6 +26,7 @@ namespace xiAPI.NET_example
         private static int timeout;
         private static float gain;
         private static int imageCount;
+        private static int shrink;
 
         private static NamedPipeServerStream server;
         private static BinaryWriter pipeWriter;
@@ -199,6 +200,7 @@ namespace xiAPI.NET_example
             exposure = (int)pipeReader.ReadUInt32();
             gain = (int)pipeReader.ReadUInt32();
             approximatePicCount = (int)pipeReader.ReadUInt32();
+            shrink = (int)pipeReader.ReadUInt32();
         }
 
         static void formatImageList()
@@ -208,10 +210,10 @@ namespace xiAPI.NET_example
             int width = 0, height = 0;
             // image width must be divisible by 4
             myCam.GetParam(PRM.WIDTH, out width);
-            myCam.SetParam(PRM.WIDTH, (width - (width % 4))/2);
+            myCam.SetParam(PRM.WIDTH, (width - (width % 4))/shrink);
             myCam.GetParam(PRM.WIDTH, out width);
             myCam.GetParam(PRM.HEIGHT, out height);
-            myCam.SetParam(PRM.HEIGHT, (height - (height % 4))/2);
+            myCam.SetParam(PRM.HEIGHT, (height - (height % 4))/shrink);
             myCam.GetParam(PRM.HEIGHT, out height);
             Console.Write("ImageList adding SafeBitmap ");
             for (int count = 0; count < approximatePicCount; count++)

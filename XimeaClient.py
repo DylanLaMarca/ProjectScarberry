@@ -8,7 +8,7 @@ class XimeaClient:
     gui = None
     pipe_name = 'XimeaPipe'
 
-    def __init__(self,framerate,gain,run_time,gui):
+    def __init__(self,framerate,gain,shrink,run_time,gui):
         self.gui = gui
         self.pipe = open(r'\\.\pipe\{}'.format(self.pipe_name), 'r+b', 0)
         exposure = (1000000/(int(framerate)))
@@ -21,6 +21,9 @@ class XimeaClient:
         self.pipe.write(numpy.uint32(gain))
         Interface.choose_print(gui, 'camera', 'sending {} {}'.format(self.pipe_name, number_of_pics))
         self.pipe.write(numpy.uint32(number_of_pics))
+        Interface.choose_print(gui, 'camera', 'sending {} {}'.format(self.pipe_name, shrink))
+        self.pipe.write(numpy.uint32(shrink))
+
 
     def get_image(self):
         image_length = struct.unpack('I', self.pipe.read(4))[0]

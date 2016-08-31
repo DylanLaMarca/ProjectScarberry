@@ -19,6 +19,12 @@ class ScarberryGui:
     extension = None
     blur = None
     gain = None
+    shink = None
+    draw = None
+    draw_roi = None
+    draw_centroid = None
+    draw_vector = None
+    draw_count = None
     arduino_controller_frame = None
     arduino_controller_text = None
     ximea_client_frame = None
@@ -61,9 +67,21 @@ class ScarberryGui:
             element.grid(list_count,0)
             list_count+=1
 
-        directory_button.grid(column=0, row=list_count, padx=5)
-        start_button.grid(column=0, row=list_count+1, sticky=W, padx=5)
-        abort_button.grid(column=0, row=list_count+1, sticky=E, padx=5)
+
+        self.draw = ScarberryGui.CheckBoxElement(self.content,"Draw: ",5,W)
+        self.draw.grid(list_count,0)
+        self.draw_roi = ScarberryGui.CheckBoxElement(self.content,"Roi ",20,W)
+        self.draw_roi.grid(list_count+1,0)
+        self.draw_centroid = ScarberryGui.CheckBoxElement(self.content,"Centroid ",2,E)
+        self.draw_centroid.grid(list_count+1,0)
+        self.draw_vector = ScarberryGui.CheckBoxElement(self.content,"Vector ",20,W)
+        self.draw_vector.grid(list_count+2,0)
+        self.draw_count = ScarberryGui.CheckBoxElement(self.content, "Count ",2,E)
+        self.draw_count.grid(list_count+2,0)
+
+        directory_button.grid(column=0, row=list_count+3, padx=5)
+        start_button.grid(column=0, row=list_count+4, sticky=W, padx=5)
+        abort_button.grid(column=0, row=list_count+4, sticky=E, padx=5)
         self.arduino_controller_frame.grid(column=1,row=0,columnspan=2,rowspan=rows,sticky=N,)
         self.ximea_client_frame.grid(column=1+(columns/3),row=0,columnspan=2,rowspan=rows,sticky=N)
         self.process_image_frame.grid(column=1+((columns/3)*2),row=0,columnspan=2,rowspan=rows,sticky=N)
@@ -107,12 +125,14 @@ class ScarberryGui:
         self.extension = ScarberryGui.OptionMenuElement(self.content,self.master,'Pic Extension: ',['.TIF','.png','.jpg','.gif'])
         self.blur = ScarberryGui.OptionMenuElement(self.content,self.master,'Blur Val: ',self.generate_optionmenu_elements(15, 3, 2))
         self.gain = ScarberryGui.OptionMenuElement(self.content,self.master,'Gain Val:  ',self.generate_optionmenu_elements(7, 0, 1))
+        self.shrink = ScarberryGui.OptionMenuElement(self.content,self.master,'Shrink Val:  ',['1','2','4','8','16','32'])
         self.element_list.extend([self.extension,
                                   self.blur,
-                                  self.gain])
+                                  self.gain,
+                                  self.shrink])
 
     def format_texts(self):
-        text_height = 17
+        text_height = 25
         text_width = 30
         self.arduino_controller_frame = LabelFrame(self.content, text='ArduinoController', padx=5, pady=5)
         self.arduino_controller_text = Text(self.arduino_controller_frame, height=text_height, width=text_width)
@@ -180,6 +200,13 @@ class ScarberryGui:
         self.blur.menu = apply(OptionMenu, (self.content, self.blur) + tuple(self.blur.options))
         self.gain.value.set(camera_values[0])
         self.gain.menu = apply(OptionMenu, (self.content, self.gain) + tuple(self.gain.options))
+        self.shrink.value.set(camera_values[1])
+        self.shrink.menu = apply(OptionMenu, (self.content, self.shrink) + tuple(self.shrink.options))
+        self.draw.value.set(process_values[6])
+        self.draw_roi.value.set(process_values[7])
+        self.draw_centroid.value.set(process_values[8])
+        self.draw_vector.value.set(process_values[9])
+        self.draw_count.value.set(process_values[10])
 
     def get_entry_values_dic(self):
         new_main_values = [1, self.runtime.value.get()]
@@ -187,13 +214,19 @@ class ScarberryGui:
                               self.framerate.value.get(),
                               self.strobecount.value.get(),
                               float('.' + self.dutycycle.value.get())]
-        new_camera_values = [self.gain.value.get()]
+        new_camera_values = [self.gain.value.get(),
+                             self.shrink.value.get()]
         new_process_values = [self.blur.value.get(),
                               self.thresh.value.get(),
                               self.image_directory,
                               self.name.value.get(),
                               self.padding.value.get(),
-                              self.extension.value.get()]
+                              self.extension.value.get(),
+                              self.draw.value.get(),
+                              self.draw_roi.value.get(),
+                              self.draw_centroid.value.get(),
+                              self.draw_vector.value.get(),
+                              self.draw_count.value.get()]
         return {'Main':new_main_values,
                 'Arduino':new_arduino_values,
                 'XimeaClient':new_camera_values,
@@ -230,6 +263,22 @@ class ScarberryGui:
         def grid(self, row, column):
             self.label.grid(column=column, row=row, sticky=W, padx=5)
             self.menu.grid(column=column, row=row, sticky=E, padx=5)
+
+    class CheckBoxElement:
+        value = None
+        check_box = None
+        padx = None
+        sticky = None
+
+        def __init__(self,content,title,padx,sticky):
+            self.padx = padx
+            self.sticky = sticky
+            self.value = IntVar()
+            self.check_box = Checkbutton(content, text=title,variable=self.value)
+            self.check_box.pack()
+
+        def grid(self,row,column):
+            self.check_box.grid(column=column, row=row, sticky=self.sticky, padx=self.padx)
 
 def choose_print(gui, text, string):
     widget = None

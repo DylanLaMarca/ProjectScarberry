@@ -54,7 +54,7 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
     subprocess.Popen('XimeaController\\XimeaController\\bin\\Debug\\XimeaController.exe')
     time.sleep(6)
     try:
-        client = XimeaClient.XimeaClient(arduino_values[1],camera_values[0],main_values[1], gui);
+        client = XimeaClient.XimeaClient(arduino_values[1],camera_values[0],camera_values[1],main_values[1], gui);
         run = True
         time.sleep(10)
         trigger.set_true('startArduino')
@@ -85,16 +85,29 @@ def process_worker(queue,process_values,trigger,gui=None):
                                     image_direcoty=process_values[2],
                                     name=process_values[3],
                                     extention=process_values[5])
-            ProcessImage.draw_and_data(opencv_pic,
-                              '{}\\data\\data-{}_{}{}'.format(process_values[2],
-                                                              process_values[3],
-                                                              formated_number,
-                                                              process_values[5]),
-                              '{}\\data\\data-{}_{}{}'.format(process_values[2],
-                                                              process_values[3],
-                                                              formated_number,
-                                                              '.txt'),
-                              11,100,draw_rois=True,draw_centroid=True,draw_count=True)
+            data_filename = '{}\\data\\data-{}_{}{}'.format(process_values[2],
+                                                                  process_values[3],
+                                                                  formated_number,
+                                                                  '.txt')
+            print '-------{}'.format(data_filename)
+            if process_values[6]:
+                ProcessImage.draw_and_data(opencv_pic,
+                                  '{}\\data\\data-{}_{}{}'.format(process_values[2],
+                                                                  process_values[3],
+                                                                  formated_number,
+                                                                  process_values[5]),
+                                  data_filename,
+                                process_values[0],
+                                process_values[1],
+                                draw_rois=process_values[7],
+                                draw_centroid=process_values[8],
+                                draw_vectors=process_values[9],
+                                draw_count=process_values[10])
+            else:
+                data = ProcessImage.get_data(opencv_pic,
+                                      process_values[0],
+                                      process_values[1])
+                ProcessImage.save_data(data,data_filename)
             pic_count += 1
     Interface.choose_print(gui, 'process', 'ProcessImageThread: Finished')
 
