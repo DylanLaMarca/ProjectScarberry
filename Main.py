@@ -10,14 +10,17 @@ import Interface
 
 settings_file_directory = 'ScarberrySettings'
 
-def get_settings_dic(keys):
+def get_settings_dict(keys):
     settings_dic = {}
     for key in keys:
-        settings_dic[key] = []
+        settings_dic[key] = {}
     with open(settings_file_directory) as file:
         print('Collecting {} information:'.format(file.name))
         for line in file.readlines():
-            settings_dic[line[:line.index(':')]].append(line[line.index('[') + 1:line.index(']')])
+            sub_dict = line[:line.index(':')]
+            sub_key = line[line.index(':') + 1:line.index('[')]
+            value = line[line.index('[') + 1:line.index(']')]
+            settings_dic[sub_dict][sub_key] = value
         print settings_dic
     return settings_dic
 
@@ -31,22 +34,24 @@ def save_settings(settings):
     file.write(format_values_to_save("ProcessImage", settings.get("ProcessImage")))
     file.close()
 
-def format_values_to_save(key,values):
+def format_values_to_save(key,dict):
     output = ""
-    for value in values:
-        output += '{}:[{}]\n'.format(key,value)
+    sub_keys = dict.keys()
+    for sub_key in sub_keys:
+        output += '{}:{}[{}]\n'.format(key,sub_key,dict.get(sub_key))
         print output
     return output
 
 def arduino_worker(arduino_values,main_values,trigger,gui=None):
-    controller = ArduinoController.ArduinoController(arduino_values[0], gui)
-    for count in range(len(arduino_values)-1):
-        controller.write_value(arduino_values[count+1], 2)
+    controller = ArduinoController.ArduinoController(arduino_values.get("SerialPort"), gui)
+    controller.write_value(arduino_values.get("FrameRate"), 2)
+    controller.write_value(arduino_values.get("StrobeCount"), 2)
+    controller.write_value(arduino_values.get("DutyCycle"), 2)
     while not trigger.get(name='startArduino'):
         pass
     controller.write_value(1,0)
     trigger.set_true('startCamera')
-    time.sleep(float(main_values[1])+1)
+    time.sleep(float(main_values.get("RunTime"))+1)
     controller.write_value(4,0)
     Interface.choose_print(gui, 'arduino', 'ArduinoThread: Finished')
 
@@ -54,7 +59,11 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
     subprocess.Popen('XimeaController\\XimeaController\\bin\\Debug\\XimeaController.exe')
     time.sleep(6)
     try:
-        client = XimeaClient.XimeaClient(arduino_values[1],camera_values[0],camera_values[1],main_values[1], gui);
+        client = XimeaClient.XimeaClient(arduino_values.get("FrameRate"),
+                                         camera_values.get("Gain"),
+                                         camera_values.get("ShrinkQuotient"),
+                                         main_values.get("RunTime"),
+                                         gui);
         run = True
         time.sleep(10)
         trigger.set_true('startArduino')
@@ -79,34 +88,34 @@ def process_worker(queue,process_values,trigger,gui=None):
             pic = queue.get()
             Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(pic_count,(hash(pic))))
             opencv_pic = ProcessImage.convert_to_cv(pic)
-            formated_number = ProcessImage.format_number(pic_count,int(process_values[4]))
+            formated_number = ProcessImage.format_number(pic_count,int(process_values.get("NumberPadding")))
             ProcessImage.save_image(opencv_pic,
                                     formated_number,
-                                    image_direcoty=process_values[2],
-                                    name=process_values[3],
-                                    extention=process_values[5])
-            data_filename = '{}\\data\\data-{}_{}{}'.format(process_values[2],
-                                                                  process_values[3],
-                                                                  formated_number,
-                                                                  '.txt')
+                                    image_direcoty=process_values.get("ImageDirectory"),
+                                    name=process_values.get("BaseName"),
+                                    extention=process_values.get("FileExtension"))
+            data_filename = '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),
+                                                            process_values.get("BaseName"),
+                                                            formated_number,
+                                                            '.txt')
             print '-------{}'.format(data_filename)
-            if process_values[6]:
+            if process_values.get("SaveDraw"):
                 ProcessImage.draw_and_data(opencv_pic,
-                                  '{}\\data\\data-{}_{}{}'.format(process_values[2],
-                                                                  process_values[3],
+                                  '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),
+                                                                  process_values.get("BaseName"),
                                                                   formated_number,
-                                                                  process_values[5]),
+                                                                  process_values.get("FileExtension")),
                                   data_filename,
-                                process_values[0],
-                                process_values[1],
-                                draw_rois=process_values[7],
-                                draw_centroid=process_values[8],
-                                draw_vectors=process_values[9],
-                                draw_count=process_values[10])
+                                process_values.get("BlurValue"),
+                                process_values.get("ThreshLimit"),
+                                draw_rois=process_values.get("DrawROIs"),
+                                draw_centroid=process_values.get("DrawCentroid"),
+                                draw_vectors=process_values.get("DrawVector"),
+                                draw_count=process_values.get("DrawCount"))
             else:
                 data = ProcessImage.get_data(opencv_pic,
-                                      process_values[0],
-                                      process_values[1])
+                                      process_values.get("BlurValue"),
+                                      process_values.get("ThreshLimit"))
                 ProcessImage.save_data(data,data_filename)
             pic_count += 1
     Interface.choose_print(gui, 'process', 'ProcessImageThread: Finished')
@@ -144,8 +153,8 @@ def start_threads(settings,gui=None):
     process.start()
 
 def main():
-    settings = get_settings_dic(['Main','Arduino','XimeaClient','ProcessImage'])
-    if(int(settings.get("Main")[0]) > 0):
+    settings = get_settings_dict(['Main','Arduino','XimeaClient','ProcessImage'])
+    if(int(settings.get("Main").get("UseInterface")) > 0):
         gui = Interface.ScarberryGui()
         gui.set_entry(settings)
         gui.start()
