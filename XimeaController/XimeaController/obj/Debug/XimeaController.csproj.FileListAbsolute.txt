@@ -2,8 +2,8 @@ c:\users\work\documents\visual studio 2015\Projects\XimeaController\XimeaControl
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\bin\Debug\XimeaController.exe.config
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\bin\Debug\XimeaController.exe
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\bin\Debug\XimeaController.pdb
-C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\bin\Debug\xiApi.NET.dll
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\obj\Debug\XimeaController.csprojResolveAssemblyReference.cache
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\obj\Debug\XimeaController.exe
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\obj\Debug\XimeaController.pdb
+C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\bin\Debug\xiApi.NET.dll
 C:\Users\Work\Documents\GitHub\ProjectScarberry\XimeaController\XimeaController\bin\Debug\xiApi.NET.xml

@@ -2025,33 +2025,6 @@
             xiCam.GetParam(PRM.BPC, out int val);
             </remarks>
         </member>
-        <member name="F:xiApi.NET.PRM.FFC">
-            <summary> 
-            Enable image flat field correction. By default 0(disabled). Type integer.
-            </summary>
-            <remarks>
-            xiCam.SetParam(PRM.FFC, int val);
-            xiCam.GetParam(PRM.FFC, out int val);
-            </remarks>
-        </member>
-        <member name="F:xiApi.NET.PRM.FFC_FLAT_FIELD_FILE_NAME">
-            <summary> 
-             Set name of file of image flat field to be applied for FFC processor(in tiff format).  By default 0(disabled). Type integer.
-            </summary>
-            <remarks>
-            xiCam.SetParam(PRM.FFC_FLAT_FIELD_FILE_NAME, int val);
-            xiCam.GetParam(PRM.FFC_FLAT_FIELD_FILE_NAME, out int val);
-            </remarks>
-        </member>
-        <member name="F:xiApi.NET.PRM.FFC_DARK_FIELD_FILE_NAME">
-            <summary> 
-             Set name of file of image dark field to be applied for FFC processor(in tiff format).  By default 0(disabled). Type integer.
-            </summary>
-            <remarks>
-            xiCam.SetParam(PRM.FFC_DARK_FIELD_FILE_NAME, int val);
-            xiCam.GetParam(PRM.FFC_DARK_FIELD_FILE_NAME, out int val);
-            </remarks>
-        </member>
         <member name="F:xiApi.NET.PRM.COLUMN_FPN_CORRECTION">
             <summary> 
             Enable correction of column fpn. By default 0(enabled). Type integer.
