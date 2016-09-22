@@ -2,6 +2,7 @@
 Contains all of the code used to display and edit program parameters, outside of the ScarberrySettings file and the Python Shell, for ProjectScarberry.
     :author: Dylan Michael LaMarca
     :contact: dlamarca@u.washington.edu
+    :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 15/8/2016 - 2/9/2016
     :class ScarberryGui: An object used to display the string output of the threads in main as well as displaying and manipulating the values stored in ScarberrySettings and used in Main.
     :function choose_print: Evaluates whether or not text shoud be printed to the Python Shell or an interface.

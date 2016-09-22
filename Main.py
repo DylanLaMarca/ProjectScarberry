@@ -2,6 +2,7 @@
 Contains all of the code necessary for starting, running, and maintaining ProjectScarberry.
     :author: Dylan Michael LaMarca
     :contact: dlamarca@u.washington.edu
+    :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 26/7/2016 - 2/9/2016
     :cvar SETTINGS_FILE_DIRECTORY: The directory of ScarberrySettings.
     :type SETTINGS_FILE_DIRECTORY: type

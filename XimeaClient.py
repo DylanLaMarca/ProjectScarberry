@@ -2,6 +2,7 @@
 Contains all of the code needed to interact and utilize the C# program XimeaController for ProjectScarberry.
     :author: Dylan Michael LaMarca
     :contact: dlamarca@u.washington.edu
+    :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 26/7/2016 - 2/9/2016
     :class XimeaClient: An object used to establish and manage a pipe with the C# program XimeaController to receive images.
 """

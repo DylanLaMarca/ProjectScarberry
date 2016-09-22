@@ -2,6 +2,7 @@
 Contains all of the code used to interpret, edit, analyze, and save images in ProjectScarberry.
     :author: Dylan Michael LaMarca
     :contact: dlamarca@u.washington.edu
+    :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 27/7/2016 - 2/9/2016
     :function convert_to_cv: Converts a base64 string of an image to a numpy array image.
     :function save_image:  Saves an image and formats the file name like the following: "directory\\name_formatted_number.extention".
