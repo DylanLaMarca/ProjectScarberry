@@ -8,9 +8,9 @@
     ~ pin 11: IR Strobe Curcuit Optic Isolator
  ************************************************
   Created:  4/8/2016
-    Dylan Michael LaMarca
+    Dylan Michael LaMarca [dylan@lamarca.org]
   Modified: 2/9/2016
-    Dylan Michael LaMarca
+    Dylan Michael LaMarca [dylan@lamarca.org]
   Github:
     https://github.com/GhoulPoP/ProjectScarberry
 */
