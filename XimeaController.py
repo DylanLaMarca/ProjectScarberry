@@ -1,47 +1,51 @@
 """
-Contains all of the code needed to interact and utilize the C# program XimeaController for ProjectScarberry.
+Contains all of the code needed to control a XIMEA camera for ProjectScarberry
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 26/7/2016 - 7/2/2017
+    :Date: 7/2/2017 - 9/2/2017
 """
 from ximea import xiapi
-import cv2
+import Interface
+import math
 
-#create instance for first connected camera
-cam = xiapi.Camera()
-#start communication
-print('Opening first camera...')
-cam.open_device()
+class XimeaCamera:
+    gui = None
+    cam = None
+    img = None
 
-#settings
-cam.set_exposure(20000)
+    def __init__(self,framerate,gain=0,gui=None):
+        self.gui = gui
+        self.img = xiapi.Image()
 
-#create instance of Image to store image data and metadata
-img = xiapi.Image()
+        self.cam = xiapi.Camera()
+        print('Opening camera...')
+        self.cam.open_device()
 
-#start data acquisition
-print('Starting data acquisition...')
-cam.start_acquisition()
+        exposure = (1000000 / (int(framerate)))
+        exposure -= math.pow(10, math.floor(math.log(exposure, 10)) - 1)
+        self.cam.set_exposure(int(exposure))
 
-#get data and pass them from camera to img
-cam.get_image(img)
+        self.cam.set_gain(gain)
 
-#create numpy array with data from camera. Dimensions of array are determined
-#by imgdataformat
-data = img.get_image_data_numpy()
+        self.cam.set_trigger_source('XI_TRG_EDGE_RISING')
+        self.cam.set_gpi_mode('XI_GPI_TRIGGER')
+        self.cam.set_gpo_selector('XI_GPO_PORT1')
+        self.cam.set_gpo_mode('XI_GPO_FRAME_TRIGGER_WAIT')
+        self.cam.set_imgdataformat('XI_MONO8')
 
-#stop data acquisition
-print('Stopping acquisition...')
-cam.stop_acquisition()
+    def start_aquisition(self):
+        print('Starting data acquisition...')
+        self.cam.start_acquisition()
 
-#stop communication
-cam.close_device()
+    def stop_aquisition(self):
+        print('Stopping acquisition...')
+        self.cam.stop_acquisition()
 
-#show acquired image
-print('Drawing image...')
-cv2.imshow('XiCAM example', data)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    def close_camera(self):
+        print('Closing camera...')
+        self.cam.close_device()
 
-print('Done.')
+    def get_image(self):
+        self.cam.get_image(self.img)
+        return self.img.get_image_data_numpy()
