@@ -1,7 +1,7 @@
 """
 Contains all of the code necessary for starting, running, and maintaining ProjectScarberry.
     :author: Dylan Michael LaMarca
-    :contact: dlamarca@u.washington.edu
+    :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 26/7/2016 - 2/9/2016
     :cvar SETTINGS_FILE_DIRECTORY: The directory of ScarberrySettings.
@@ -18,7 +18,7 @@ Contains all of the code necessary for starting, running, and maintaining Projec
 """
 import ArduinoController
 import ProcessImage
-import XimeaClient
+import XimeaController
 import struct
 import subprocess
 import time
@@ -125,11 +125,11 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
     subprocess.Popen('XimeaController\\XimeaController\\bin\\Debug\\XimeaController.exe')
     time.sleep(6)
     try:
-        client = XimeaClient.XimeaClient(arduino_values.get("FrameRate"),
-                                         camera_values.get("Gain"),
-                                         camera_values.get("ShrinkQuotient"),
-                                         main_values.get("RunTime"),
-                                         gui=gui);
+        client = XimeaController.XimeaClient(arduino_values.get("FrameRate"),
+                                             camera_values.get("Gain"),
+                                             camera_values.get("ShrinkQuotient"),
+                                             main_values.get("RunTime"),
+                                             gui=gui);
         run = True
         time.sleep(10)
         trigger.set_on('startArduino')
