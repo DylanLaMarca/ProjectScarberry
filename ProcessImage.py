@@ -3,7 +3,7 @@ Contains all of the code used to interpret, edit, analyze, and save images in Pr
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 27/7/2016 - 2/9/2016
+    :Date: 27/7/2016 - 21/2/2017
     :function convert_to_cv: Converts a base64 string of an image to a numpy array image.
     :function save_image:  Saves an image and formats the file name like the following: "directory\\name_formatted_number.extention".
     :function format_number: Formats a number to a specific length by appending zeros to the front of the number.
@@ -16,19 +16,6 @@ Contains all of the code used to interpret, edit, analyze, and save images in Pr
 import cv2
 import numpy as np
 import base64
-
-def convert_to_cv(image_string):
-    """
-    Converts a base64 string of an image to a numpy array image.
-        :argument image_string:
-        :type image_string: base64 string
-        :return: A numpy array of image_string
-        :rtype: numpy.ndarray
-    """
-    decoded = base64.decodestring(image_string)
-    numpy_image = np.fromstring(decoded,dtype=np.byte)
-    cv_image = cv2.imdecode(numpy_image, cv2.IMREAD_REDUCED_GRAYSCALE_8)
-    return cv_image
 
 def save_image(image,formated_number,image_direcoty='images',name='image',extention='.TIFF'):
     """
@@ -151,7 +138,6 @@ def draw_and_data(image, new_image_filename, data_filename, blur_val, thresh_val
     data = []
     count = 0
     for contour in contours:
-        print '~~~~~~~{}'.format(type(contour))
         current_roi = {}
         if draw_rois:
             x, y, w, h = cv2.boundingRect(contour)

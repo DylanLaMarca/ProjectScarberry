@@ -3,7 +3,7 @@ Contains all of the code necessary for starting, running, and maintaining Projec
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 26/7/2016 - 2/9/2016
+    :Date: 26/7/2016 - 21/2/2017
     :cvar SETTINGS_FILE_DIRECTORY: The directory of ScarberrySettings.
     :type SETTINGS_FILE_DIRECTORY: type
     :class ThreadTrigger: An object which contains, manipulates, and returns booleans for thread activation and syncing.
@@ -12,15 +12,13 @@ Contains all of the code necessary for starting, running, and maintaining Projec
     :function format_values_to_save: Formats one subdictionary to write over a part of ScarberrySettings.
     :function arduino_worker: The thread worker used to start, format, and end communication with the Arduino integral for the operation of ProjectScarberry.
     :function camera_worker: The thread worker used to start, format, and end communication with the Ximea camera integral for the operation of ProjectScarberry.
-    :function process_worker: The thread worker used save and analyze the pictures from XimeaClientThread.
+    :function process_worker: The thread worker used save and analyze the pictures from XimeaControllerThread.
     :function start_threads: Starts all of the different threads used to control the different parts of ProjectScarberry.
     :function main: Starts ProjectScarberry, loading the settings from ScarberrySettings, and evaluates whether or not to use ScarberryGui.
 """
 import ArduinoController
 import ProcessImage
 import XimeaController
-import struct
-import subprocess
 import time
 import Queue
 import threading
@@ -61,7 +59,7 @@ def save_settings(settings):
     file.truncate()
     file.write(format_values_to_save("Main",settings.get("Main")))
     file.write(format_values_to_save("Arduino", settings.get("Arduino")))
-    file.write(format_values_to_save("XimeaClient", settings.get("XimeaClient")))
+    file.write(format_values_to_save("XimeaController", settings.get("XimeaController")))
     file.write(format_values_to_save("ProcessImage", settings.get("ProcessImage")))
     file.close()
 
@@ -95,23 +93,24 @@ def arduino_worker(arduino_values,main_values,trigger,gui=None):
         :type gui: Interface.ScarberryGui
     """
     controller = ArduinoController.ArduinoController(arduino_values.get("SerialPort"),gui=gui)
-    controller.write_value(arduino_values.get("FrameRate"), 2)
-    controller.write_value(arduino_values.get("StrobeCount"), 2)
-    controller.write_value(arduino_values.get("DutyCycle"), 2)
+    controller.write_value(arduino_values.get("FrameRate"))
+    controller.write_value(arduino_values.get("StrobeCount"))
+    controller.write_value(arduino_values.get("DutyCycle"))
     while not trigger.get(name='startArduino'):
         pass
-    controller.write_value(1,0)
+    controller.write_value(1)
     trigger.set_on('startCamera')
     time.sleep(float(main_values.get("RunTime"))+1)
-    controller.write_value(4,0)
+    controller.write_value(4)
+    trigger.set_off('startCamera')
     Interface.choose_print(gui, 'arduino', 'ArduinoThread: Finished')
 
 def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=None):
     """
     The thread worker used to start, format, and end communication with the Ximea camera integral for the operation of ProjectScarberry.
-        :argument queue: The queue used to store all of the pictures recieved from XimeaClient.
+        :argument queue: The queue used to store all of the pictures recieved from XimeaController.
         :type queue: Queue.Queue
-        :argument camera_values: All of the XimeaClient settings in ScarberrySettings.
+        :argument camera_values: All of the XimeaController settings in ScarberrySettings.
         :type camera_values: dict
         :argument arduino_values: All of the Arduino settings in ScarberrySettings.
         :type arduino_values: dict
@@ -122,35 +121,25 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
-    subprocess.Popen('XimeaController\\XimeaController\\bin\\Debug\\XimeaController.exe')
-    time.sleep(6)
-    try:
-        client = XimeaController.XimeaClient(arduino_values.get("FrameRate"),
-                                             camera_values.get("Gain"),
-                                             camera_values.get("ShrinkQuotient"),
-                                             main_values.get("RunTime"),
-                                             gui=gui);
-        run = True
-        time.sleep(10)
-        trigger.set_on('startArduino')
-        while not trigger.get(name='startCamera'):
-            pass
-        while run:
-            try:
-                current_image = client.get_image()
-                queue.put(current_image)
-            except struct.error as struct_err:
-                Interface.choose_print(gui, 'camera', 'Main: Server Disconnected: struct_err: {}'.format(struct_err))
-                run = False
-    except IOError as io_err:
-        Interface.choose_print(gui, 'camera', 'Main: IOError: {}'.format(io_err))
+    camera = XimeaController.XimeaCamera(arduino_values.get("FrameRate"),
+                                         gain=camera_values.get("Gain"),
+                                         gui=gui)
+    run = True
+    trigger.set_on('startArduino')
+    while not trigger.get(name='startCamera'):
+        pass
+    camera.start_acquisition()
+    while trigger.get(name='startCamera'):
+        current_image = camera.get_image()
+        queue.put(current_image)
+    camera.stop_acquisition()
     trigger.set_off('runProcess')
-    Interface.choose_print(gui, 'camera', 'XimeaClientThread: Finished')
+    Interface.choose_print(gui, 'camera', 'XimeaControllerThread: Finished')
 
 def process_worker(queue,process_values,trigger,gui=None):
     """
-    The thread worker used save and analyze the pictures from XimeaClientThread.
-        :argument queue: The queue used to store all of the pictures recieved from XimeaClient.
+    The thread worker used save and analyze the pictures from XimeaControllerThread.
+        :argument queue: The queue used to store all of the pictures recieved from XimeaController.
         :type queue: Queue.Queue
         :argument process_values: All of the ProcessImage settings in ScarberrySettings.
         :type process_values: dict
@@ -166,10 +155,9 @@ def process_worker(queue,process_values,trigger,gui=None):
     while trigger.get(name='runProcess'):
         while not queue.empty():
             pic = queue.get()
-            Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(pic_count,(hash(pic))))
-            opencv_pic = ProcessImage.convert_to_cv(pic)
+            Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(pic_count,pic))
             formated_number = ProcessImage.format_number(pic_count,int(process_values.get("NumberPadding")))
-            ProcessImage.save_image(opencv_pic,
+            ProcessImage.save_image(pic,
                                     formated_number,
                                     image_direcoty=process_values.get("ImageDirectory"),
                                     name=process_values.get("BaseName"),
@@ -179,7 +167,7 @@ def process_worker(queue,process_values,trigger,gui=None):
                                                     formated_number,
                                                     '.txt')
             if process_values.get("SaveDraw"):
-                ProcessImage.draw_and_data(opencv_pic,
+                ProcessImage.draw_and_data(pic,
                                   '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),
                                                                   process_values.get("BaseName"),
                                                                   formated_number,
@@ -192,7 +180,7 @@ def process_worker(queue,process_values,trigger,gui=None):
                                 draw_colours=process_values.get("DrawColour"),
                                 draw_count=process_values.get("DrawCount"))
             else:
-                data = ProcessImage.get_data(opencv_pic,
+                data = ProcessImage.get_data(pic,
                                       process_values.get("BlurValue"),
                                       process_values.get("ThreshLimit"))
                 ProcessImage.save_data(data,data_filename)
@@ -221,9 +209,9 @@ def start_threads(settings,gui=None):
                                      main_values,
                                      trigger_master),
                                kwargs={'gui':gui})
-    camera = threading.Thread(name="XimeaClientThread",
+    camera = threading.Thread(name="XimeaControllerThread",
                               target=camera_worker,
-                              args=(pic_queue,settings.get("XimeaClient"),
+                              args=(pic_queue,settings.get("XimeaController"),
                                     arduino_values,
                                     main_values,
                                     trigger_master),
@@ -243,7 +231,7 @@ def main():
     Starts ProjectScarberry, loading the settings from ScarberrySettings, and evaluates whether or not to use ScarberryGui.
     """
     print help(ArduinoController.ArduinoController.write_value)
-    settings = get_settings_dict(['Main','Arduino','XimeaClient','ProcessImage'])
+    settings = get_settings_dict(['Main','Arduino','XimeaController','ProcessImage'])
     if(int(settings.get("Main").get("UseInterface")) > 0):
         gui = Interface.ScarberryGui()
         gui.set_inputs(settings)
