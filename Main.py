@@ -128,11 +128,11 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
     trigger.set_on('startArduino')
     while not trigger.get(name='startCamera'):
         pass
-    camera.start_aquisition()
+    camera.start_acquisition()
     while trigger.get(name='startCamera'):
         current_image = camera.get_image()
         queue.put(current_image)
-    camera.stop_aquisition()
+    camera.stop_acquisition()
     trigger.set_off('runProcess')
     Interface.choose_print(gui, 'camera', 'XimeaControllerThread: Finished')
 
