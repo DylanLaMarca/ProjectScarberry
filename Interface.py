@@ -3,7 +3,7 @@ Contains all of the code used to display and edit program parameters, outside of
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 15/8/2016 - 2/9/2016
+    :Date: 15/8/2016 - 21/2/2017
     :class ScarberryGui: An object used to display the string output of the threads in main as well as displaying and manipulating the values stored in ScarberrySettings and used in Main.
     :function choose_print: Evaluates whether or not text shoud be printed to the Python Shell or an interface.
 """
@@ -44,9 +44,9 @@ class ScarberryGui:
         :type extension: OptionMenuElement
         :ivar blur: An OptionMenuElement used to store and manipulate 'ProcessImage:BlurValue' in ScarberrySettings.
         :type blur: OptionMenuElement
-        :ivar gain: An OptionMenuElement used to store and manipulate 'XimeaClient:Gain' in ScarberrySettings.
+        :ivar gain: An OptionMenuElement used to store and manipulate 'XimeaController:Gain' in ScarberrySettings.
         :type gain: OptionMenuElement
-        :ivar shrink: An OptionMenuElement used to store and manipulate 'XimeaClient:ShrinkQuotient' in ScarberrySettings.
+        :ivar shrink: An OptionMenuElement used to store and manipulate 'XimeaController:ShrinkQuotient' in ScarberrySettings.
         :type shrink: OptionMenuElement
         :ivar draw: An CheckBoxElement used to store and manipulate 'ProcessImage:SaveDraw' in ScarberrySettings.
         :type draw: CheckBoxElement
@@ -60,8 +60,8 @@ class ScarberryGui:
         :type draw_count: CheckBoxElement
         :ivar arduino_controller_text: A TextElement used to display the string output of Main's ArduinoThread.
         :type arduino_controller_text: TextElement
-        :ivar ximea_client_text: A TextElement used to display the string output of Main's XimeaClientThread.
-        :type ximea_client_text: TextElement
+        :ivar ximea_controller_text: A TextElement used to display the string output of Main's XimeaControllerThread.
+        :type ximea_controller_text: TextElement
         :ivar process_image_text: A TextElement used to display the string output of Main's ProcessImageThread.
         :type process_image_text: TextElement
         :ivar option_elements: A list used to efficiently add all of the EntryElements and OptionMenuElement to content.
@@ -108,7 +108,7 @@ class ScarberryGui:
     draw_colour = None
     draw_count = None
     arduino_controller_text = None
-    ximea_client_text = None
+    ximea_controller_text = None
     process_image_text = None
     option_elements = []
     text_elements = []
@@ -248,10 +248,10 @@ class ScarberryGui:
         text_height = 25
         text_width = 30
         self.arduino_controller_text = ScarberryGui.TextElement(self.content,'ArduinoController',text_height,text_width)
-        self.ximea_client_text = ScarberryGui.TextElement(self.content,'XimeaClient',text_height,text_width)
+        self.ximea_controller_text = ScarberryGui.TextElement(self.content,'XimeaController',text_height,text_width)
         self.process_image_text = ScarberryGui.TextElement(self.content, 'ProcessImage',text_height,text_width)
         self.text_elements = [self.arduino_controller_text,
-                              self.ximea_client_text,
+                              self.ximea_controller_text,
                               self.process_image_text]
 
     def start(self):
@@ -292,7 +292,7 @@ class ScarberryGui:
         """
         Sets all of the input elements to their corresponding values stored in ScarberrySettings.
         """
-        self.set_inputs(Main.get_settings_dict(['Main', 'Arduino', 'XimeaClient', 'ProcessImage']))
+        self.set_inputs(Main.get_settings_dict(['Main', 'Arduino', 'XimeaController', 'ProcessImage']))
 
     def set_inputs(self, settings):
         """
@@ -302,7 +302,7 @@ class ScarberryGui:
         """
         main_values = settings.get("Main")
         arduino_values = settings.get("Arduino")
-        camera_values = settings.get("XimeaClient")
+        camera_values = settings.get("XimeaController")
         process_values = settings.get("ProcessImage")
         self.image_directory = process_values.get("ImageDirectory")
         self.com.set_text(arduino_values.get("SerialPort"))
@@ -351,7 +351,7 @@ class ScarberryGui:
                               "DrawCount":self.draw_count.value.get()}
         return {'Main':new_main_values,
                 'Arduino':new_arduino_values,
-                'XimeaClient':new_camera_values,
+                'XimeaController':new_camera_values,
                 'ProcessImage':new_process_values}
 
     def set_presets(self):
@@ -563,7 +563,7 @@ def choose_print(gui, label, text):
         if label == 'arduino':
             widget = gui.arduino_controller_text.text
         elif label == 'camera':
-            widget = gui.ximea_client_text.text
+            widget = gui.ximea_controller_text.text
         elif label == 'process':
             widget = gui.process_image_text.text
         widget.config(state="normal")

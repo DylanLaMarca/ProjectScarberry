@@ -3,7 +3,7 @@ Contains all of the code needed to control a XIMEA camera for ProjectScarberry
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 7/2/2017 - 9/2/2017
+    :Date: 7/2/2017 - 21/2/2017
 """
 from ximea import xiapi
 import Interface
@@ -19,14 +19,14 @@ class XimeaCamera:
         self.img = xiapi.Image()
 
         self.cam = xiapi.Camera()
-        print('Opening camera...')
+        Interface.choose_print(gui, 'camera', 'Opening camera...')
         self.cam.open_device()
 
         exposure = (1000000 / (int(framerate)))
         exposure -= math.pow(10, math.floor(math.log(exposure, 10)) - 1)
         self.cam.set_exposure(int(exposure))
 
-        self.cam.set_gain(gain)
+        self.cam.set_gain(float(gain))
 
         self.cam.set_trigger_source('XI_TRG_EDGE_RISING')
         self.cam.set_gpi_mode('XI_GPI_TRIGGER')
@@ -35,15 +35,15 @@ class XimeaCamera:
         self.cam.set_imgdataformat('XI_MONO8')
 
     def start_aquisition(self):
-        print('Starting data acquisition...')
+        Interface.choose_print(self.gui,'camera','Starting data acquisition...')
         self.cam.start_acquisition()
 
     def stop_aquisition(self):
-        print('Stopping acquisition...')
+        Interface.choose_print(self.gui, 'camera','Stopping acquisition...')
         self.cam.stop_acquisition()
 
     def close_camera(self):
-        print('Closing camera...')
+        Interface.choose_print(self.gui, 'camera','Closing camera...')
         self.cam.close_device()
 
     def get_image(self):
