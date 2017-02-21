@@ -9,7 +9,7 @@
  ************************************************
   Created:  4/8/2016
     Dylan Michael LaMarca [dylan@lamarca.org]
-  Modified: 2/9/2016
+  Modified: 21/2/2017
     Dylan Michael LaMarca [dylan@lamarca.org]
   Github:
     https://github.com/GhoulPoP/ProjectScarberry
@@ -70,6 +70,8 @@ float getSerialValue() {
       value = Serial.parseFloat();
     }
   }
+  //delay(1000);
+  Serial.println(9);
   return value;
 }
 
