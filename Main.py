@@ -136,7 +136,7 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
     trigger.set_off('runProcess')
     Interface.choose_print(gui, 'camera', 'XimeaControllerThread: Finished')
 
-def process_worker(queue,process_values,trigger,gui=None):
+def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
     """
     The thread worker used save and analyze the pictures from XimeaControllerThread.
         :argument queue: The queue used to store all of the pictures recieved from XimeaController.
@@ -149,43 +149,65 @@ def process_worker(queue,process_values,trigger,gui=None):
         :type gui: Interface.ScarberryGui
     """
     pic_count = 0
-    data_directory = process_values.get("ImageDirectory")+'\\data'
-    if not os.path.exists(data_directory):
-        os.makedirs(data_directory)
     while trigger.get(name='runProcess'):
-        while not queue.empty():
-            pic = queue.get()
-            Interface.choose_print(gui, 'process', 'pic {} hex: {}'.format(pic_count,pic))
+        while not save_queue.empty():
+            pic = save_queue.get()
+            Interface.choose_print(gui, 'save', 'pic {} hex: {}'.format(pic_count,pic))
             formated_number = ProcessImage.format_number(pic_count,int(process_values.get("NumberPadding")))
             ProcessImage.save_image(pic,
                                     formated_number,
                                     image_direcoty=process_values.get("ImageDirectory"),
                                     name=process_values.get("BaseName"),
                                     extention=process_values.get("FileExtension"))
+            data_queue.put(pic)
+            pic_count += 1
+    Interface.choose_print(gui, 'save', 'SaveImageThread: Finished')
+
+def data_worker(queue, process_values, trigger, gui=None):
+    """
+    The thread worker used save and analyze the pictures from XimeaControllerThread.
+        :argument queue: The queue used to store all of the pictures recieved from XimeaController.
+        :type queue: Queue.Queue
+        :argument process_values: All of the ProcessImage settings in ScarberrySettings.
+        :type process_values: dict
+        :argument trigger: The ThreadTrigger which contains all of the booleans for thread syncing.
+        :type trigger: ThreadTrigger
+        :keyword gui: Optional interface used to print.
+        :type gui: Interface.ScarberryGui
+    """
+    pic_count = 0
+    data_directory = process_values.get("ImageDirectory") + '\\data'
+    if not os.path.exists(data_directory):
+        os.makedirs(data_directory)
+    while trigger.get(name='runProcess'):
+        while not queue.empty():
+            pic = queue.get()
+            Interface.choose_print(gui, 'data', 'pic {} hex: {}'.format(pic_count, pic))
+            formated_number = ProcessImage.format_number(pic_count, int(process_values.get("NumberPadding")))
             data_filename = '{}\\data-{}_{}{}'.format(data_directory,
-                                                    process_values.get("BaseName"),
-                                                    formated_number,
-                                                    '.txt')
+                                                      process_values.get("BaseName"),
+                                                      formated_number,
+                                                      '.txt')
             if process_values.get("SaveDraw"):
                 ProcessImage.draw_and_data(pic,
-                                  '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),
-                                                                  process_values.get("BaseName"),
-                                                                  formated_number,
-                                                                  process_values.get("FileExtension")),
-                                  data_filename,
-                                process_values.get("BlurValue"),
-                                process_values.get("ThreshLimit"),
-                                draw_rois=process_values.get("DrawROIs"),
-                                draw_centroid=process_values.get("DrawCentroid"),
-                                draw_colours=process_values.get("DrawColour"),
-                                draw_count=process_values.get("DrawCount"))
+                                           '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),
+                                                                           process_values.get("BaseName"),
+                                                                           formated_number,
+                                                                           process_values.get("FileExtension")),
+                                           data_filename,
+                                           process_values.get("BlurValue"),
+                                           process_values.get("ThreshLimit"),
+                                           draw_rois=process_values.get("DrawROIs"),
+                                           draw_centroid=process_values.get("DrawCentroid"),
+                                           draw_colours=process_values.get("DrawColour"),
+                                           draw_count=process_values.get("DrawCount"))
             else:
                 data = ProcessImage.get_data(pic,
-                                      process_values.get("BlurValue"),
-                                      process_values.get("ThreshLimit"))
-                ProcessImage.save_data(data,data_filename)
+                                             process_values.get("BlurValue"),
+                                             process_values.get("ThreshLimit"))
+                ProcessImage.save_data(data, data_filename)
             pic_count += 1
-    Interface.choose_print(gui, 'process', 'ProcessImageThread: Finished')
+    Interface.choose_print(gui, 'data', 'DataImageThread: Finished')
 
 def start_threads(settings,gui=None):
     """
@@ -197,7 +219,8 @@ def start_threads(settings,gui=None):
     """
     arduino_values = settings.get("Arduino")
     main_values = settings.get("Main")
-    pic_queue = Queue.Queue(maxsize=0)
+    save_pic_queue = Queue.Queue(maxsize=0)
+    data_pic_queue = Queue.Queue(maxsize=0)
     trigger_master = ThreadTrigger()
     trigger_master.register('startArduino',False)
     trigger_master.register('startCamera', False)
@@ -211,20 +234,28 @@ def start_threads(settings,gui=None):
                                kwargs={'gui':gui})
     camera = threading.Thread(name="XimeaControllerThread",
                               target=camera_worker,
-                              args=(pic_queue,settings.get("XimeaController"),
+                              args=(save_pic_queue,settings.get("XimeaController"),
                                     arduino_values,
                                     main_values,
                                     trigger_master),
                               kwargs={'gui':gui})
-    process = threading.Thread(name="ProcessImageThread",
-                               target=process_worker,
-                               args=(pic_queue,
+    save = threading.Thread(name="SaveImageThread",
+                               target=save_worker,
+                               args=(save_pic_queue,
+                                     data_pic_queue,
                                      settings.get("ProcessImage"),
                                      trigger_master),
                                kwargs={'gui':gui})
+    data = threading.Thread(name="DataImageThread",
+                            target=data_worker,
+                            args=(data_pic_queue,
+                                  settings.get("ProcessImage"),
+                                  trigger_master),
+                            kwargs={'gui': gui})
     arduino.start()
     camera.start()
-    process.start()
+    save.start()
+    data.start()
 
 def main():
     """

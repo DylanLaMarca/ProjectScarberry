@@ -62,8 +62,10 @@ class ScarberryGui:
         :type arduino_controller_text: TextElement
         :ivar ximea_controller_text: A TextElement used to display the string output of Main's XimeaControllerThread.
         :type ximea_controller_text: TextElement
-        :ivar process_image_text: A TextElement used to display the string output of Main's ProcessImageThread.
-        :type process_image_text: TextElement
+        :ivar save_image_text: A TextElement used to display the string output of Main's SaveImageThread.
+        :type save_image_text: TextElement
+        :ivar data_image_text: A TextElement used to display the string output of Main's DataImageThread.
+        :type data_image_text: TextElement
         :ivar option_elements: A list used to efficiently add all of the EntryElements and OptionMenuElement to content.
         :type option_elements: list
         :ivar text_elements: A list used to efficiently add all of the TextElements to content.
@@ -109,7 +111,8 @@ class ScarberryGui:
     draw_count = None
     arduino_controller_text = None
     ximea_controller_text = None
-    process_image_text = None
+    save_image_text = None
+    data_image_text = None
     option_elements = []
     text_elements = []
 
@@ -246,13 +249,15 @@ class ScarberryGui:
         Formats the text fields in ScarberryGui.
         """
         text_height = 25
-        text_width = 30
+        text_width = 20
         self.arduino_controller_text = ScarberryGui.TextElement(self.content,'ArduinoController',text_height,text_width)
         self.ximea_controller_text = ScarberryGui.TextElement(self.content,'XimeaController',text_height,text_width)
-        self.process_image_text = ScarberryGui.TextElement(self.content, 'ProcessImage',text_height,text_width)
+        self.save_image_text = ScarberryGui.TextElement(self.content, 'SaveImage', text_height, text_width)
+        self.data_image_text = ScarberryGui.TextElement(self.content, 'DataImage', text_height, text_width)
         self.text_elements = [self.arduino_controller_text,
                               self.ximea_controller_text,
-                              self.process_image_text]
+                              self.save_image_text,
+                              self.data_image_text]
 
     def start(self):
         """
@@ -564,8 +569,10 @@ def choose_print(gui, label, text):
             widget = gui.arduino_controller_text.text
         elif label == 'camera':
             widget = gui.ximea_controller_text.text
-        elif label == 'process':
-            widget = gui.process_image_text.text
+        elif label == 'save':
+            widget = gui.save_image_text.text
+        elif label == 'data':
+            widget = gui.data_image_text.text
         widget.config(state="normal")
         widget.insert('0.0', '{}\n'.format(text))
         widget.config(state=DISABLED)
