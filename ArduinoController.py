@@ -9,6 +9,7 @@ Contains all of the code needed to interact and utilize an Arduino for ProjectSc
 import serial
 import time
 import Interface
+import Main
 
 class ArduinoController:
     """
@@ -34,12 +35,18 @@ class ArduinoController:
             :type gui: Interface.ScarberryGui
         """
         self.gui = gui
-        self.serial = serial.Serial('COM{}'.format(com_number),115200)
-        Interface.choose_print(gui, 'arduino', 'Waiting for COM{}...'.format(com_number))
-        print('Waiting for COM{}...'.format(com_number))
-        time.sleep(ArduinoController.INITIAL_SLEEP);
-        Interface.choose_print(gui, 'arduino', 'Connected to COM{}.'.format(com_number))
-        print('Connected to COM{}.'.format(com_number))
+        try:
+            self.serial = serial.Serial('COM{}'.format(com_number),115200)
+            Interface.choose_print(gui, 'arduino', 'Waiting for COM{}...'.format(com_number))
+            print('Waiting for COM{}...'.format(com_number))
+            time.sleep(ArduinoController.INITIAL_SLEEP);
+            Interface.choose_print(gui, 'arduino', 'Connected to COM{}.'.format(com_number))
+            print('Connected to COM{}.'.format(com_number))
+        except serial.SerialException:
+            Interface.choose_print(self.gui,
+                                   'arduino',
+                                   'SerialException: could not open COM{}'.format(com_number))
+            Main.abort_session()
 
     def write_value(self,value):
         """
@@ -50,8 +57,12 @@ class ArduinoController:
             :type pause: int, float
         """
         Interface.choose_print(self.gui, 'arduino', 'Writing "{}"...'.format(value))
-        print 'Writing "{}"...'.format(value)
-        self.serial.write('{}'.format(value))
-        self.serial.readline()
-        Interface.choose_print(self.gui, 'arduino', 'Wrote: {}'.format(value))
-        print 'Wrote: {}'.format(value)
+        try:
+            self.serial.write('{}'.format(value))
+            self.serial.readline()
+            Interface.choose_print(self.gui, 'arduino', 'Wrote: {}'.format(value))
+        except serial.SerialException:
+            Interface.choose_print(self.gui,
+                                   'arduino',
+                                   'SerialException: WriteFile failed')
+            Main.abort_session()

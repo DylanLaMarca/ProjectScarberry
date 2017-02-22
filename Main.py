@@ -39,14 +39,35 @@ def get_settings_dict(keys):
     settings_dic = {}
     for key in keys:
         settings_dic[key] = {}
-    with open(SETTINGS_FILE_DIRECTORY) as file:
-        print('Collecting {} information:'.format(file.name))
-        for line in file.readlines():
-            sub_dict = line[:line.index(':')]
-            sub_key = line[line.index(':') + 1:line.index('[')]
-            value = line[line.index('[') + 1:line.index(']')]
-            settings_dic[sub_dict][sub_key] = value
-        print settings_dic
+    try:
+        with open(SETTINGS_FILE_DIRECTORY) as file:
+            print('Collecting {} information:'.format(file.name))
+            for line in file.readlines():
+                sub_dict = line[:line.index(':')]
+                sub_key = line[line.index(':') + 1:line.index('[')]
+                value = line[line.index('[') + 1:line.index(']')]
+                settings_dic[sub_dict][sub_key] = value
+            print settings_dic
+    except IOError:
+        settings_dic['Main']['UseInterface'] = 1
+        settings_dic['Main']['RunTime'] = 0
+        settings_dic['Arduino']['DutyCycle'] = '0.0'
+        settings_dic['Arduino']['StrobeCount'] = 0
+        settings_dic['Arduino']['FrameRate'] = 0
+        settings_dic['Arduino']['SerialPort'] = 0
+        settings_dic['XimeaController']['Gain'] = 0
+        settings_dic['ProcessImage']['DrawColour'] = 0
+        settings_dic['ProcessImage']['BaseName'] = ''
+        settings_dic['ProcessImage']['BlurValue'] = 3
+        settings_dic['ProcessImage']['FileExtension'] = '.TIF'
+        settings_dic['ProcessImage']['ThreshLimit'] = 0
+        settings_dic['ProcessImage']['DrawCentroid'] = 0
+        settings_dic['ProcessImage']['SaveImage'] = 0
+        settings_dic['ProcessImage']['NumberPadding'] = 0
+        settings_dic['ProcessImage']['DrawROIs'] = 0
+        settings_dic['ProcessImage']['DrawCount'] = 0
+        settings_dic['ProcessImage']['ImageDirectory'] = 'images'
+        save_settings(settings_dic)
     return settings_dic
 
 def save_settings(settings):
@@ -96,9 +117,10 @@ def arduino_worker(arduino_values,main_values,trigger,gui=None):
     global abort
     wait = True
     controller = ArduinoController.ArduinoController(arduino_values.get("SerialPort"),gui=gui)
-    controller.write_value(arduino_values.get("FrameRate"))
-    controller.write_value(arduino_values.get("StrobeCount"))
-    controller.write_value(arduino_values.get("DutyCycle"))
+    if not abort:
+        controller.write_value(arduino_values.get("FrameRate"))
+        controller.write_value(arduino_values.get("StrobeCount"))
+        controller.write_value(arduino_values.get("DutyCycle"))
     while not trigger.get(name='startArduino') and wait:
         if abort:
             wait = False
@@ -268,7 +290,7 @@ def start_threads(settings,gui=None):
     save.start()
     data.start()
 
-def abort_session(gui=None):
+def abort_session():
     global abort
     abort = True
 

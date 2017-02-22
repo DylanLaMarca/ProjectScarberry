@@ -60,6 +60,8 @@ def get_contours(image, blur_val, thresh_val):
         :return: A list of the different clusters of contours.
         :rtype: numpy.ndarray[]
     """
+    if (int(blur_val)%2)==0:
+        blur_val += 1
     blur = cv2.GaussianBlur(image,(int(blur_val),int(blur_val)),0)
     ret, thresh = cv2.threshold(blur,int(thresh_val),255,cv2.THRESH_BINARY)
     im2, contours, hierarchy = cv2.findContours(thresh, 1, 2)

@@ -141,7 +141,7 @@ class ScarberryGui:
         start_button.pack()
         abort_button = Button(self.content,
                               text='   Abort   ',
-                              command=lambda:Main.abort_session(gui=self))
+                              command=lambda:Main.abort_session())
         abort_button.pack()
         self.format_texts()
 

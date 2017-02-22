@@ -7,6 +7,7 @@ Contains all of the code needed to control a XIMEA camera for ProjectScarberry.
 """
 from ximea import xiapi
 import Interface
+import Main
 import math
 
 class XimeaCamera:
@@ -42,19 +43,27 @@ class XimeaCamera:
 
         self.camera = xiapi.Camera()
         Interface.choose_print(gui, 'camera', 'Opening camera...')
-        self.camera.open_device()
+        try:
+            self.camera.open_device()
 
-        exposure = (1000000 / (int(framerate)))
-        exposure -= math.pow(10, math.floor(math.log(exposure, 10)) - 1)
-        self.camera.set_exposure(int(exposure))
+            exposure = (1000000 / (int(framerate)))
+            exposure -= math.pow(10, math.floor(math.log(exposure, 10)) - 1)
+            self.camera.set_exposure(int(exposure))
 
-        self.camera.set_gain(float(gain))
+            if gain < 0:
+                gain = 0
+            if gain > 6:
+                gain = 6
+            self.camera.set_gain(float(gain))
 
-        self.camera.set_trigger_source('XI_TRG_EDGE_RISING')
-        self.camera.set_gpi_mode('XI_GPI_TRIGGER')
-        self.camera.set_gpo_selector('XI_GPO_PORT1')
-        self.camera.set_gpo_mode('XI_GPO_FRAME_TRIGGER_WAIT')
-        self.camera.set_imgdataformat('XI_MONO8')
+            self.camera.set_trigger_source('XI_TRG_EDGE_RISING')
+            self.camera.set_gpi_mode('XI_GPI_TRIGGER')
+            self.camera.set_gpo_selector('XI_GPO_PORT1')
+            self.camera.set_gpo_mode('XI_GPO_FRAME_TRIGGER_WAIT')
+            self.camera.set_imgdataformat('XI_MONO8')
+        except xiapi.Xi_error:
+            Interface.choose_print(gui, 'camera', 'Xi_error: ERROR 56: No Devices Found')
+            Main.abort_session()
 
     def start_acquisition(self):
         """
@@ -81,5 +90,10 @@ class XimeaCamera:
         """
         Prompts the Ximea camera to capture a photo after the next GPI spike.
         """
-        self.camera.get_image(self.image)
-        return self.image.get_image_data_numpy()
+        try:
+            self.camera.get_image(self.image)
+            return self.image.get_image_data_numpy()
+        except xiapi.Xi_error:
+            Interface.choose_print(self.gui, 'camera', 'Xi_error: ERROR 10: Timeout')
+            Main.abort_session()
+            return None
