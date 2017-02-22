@@ -12,7 +12,7 @@ Contains all of the code necessary for starting, running, and maintaining Projec
     :function format_values_to_save: Formats one subdictionary to write over a part of ScarberrySettings.
     :function arduino_worker: The thread worker used to start, format, and end communication with the Arduino integral for the operation of ProjectScarberry.
     :function camera_worker: The thread worker used to start, format, and end communication with the Ximea camera integral for the operation of ProjectScarberry.
-    :function process_worker: The thread worker used save and analyze the pictures from XimeaControllerThread.
+    :function process_worker: The thread worker used save and analyze the pictures from CameraThread.
     :function start_threads: Starts all of the different threads used to control the different parts of ProjectScarberry.
     :function main: Starts ProjectScarberry, loading the settings from ScarberrySettings, and evaluates whether or not to use ScarberryGui.
 """
@@ -26,6 +26,7 @@ import Interface
 import os
 
 SETTINGS_FILE_DIRECTORY = 'ScarberrySettings'
+abort = False
 
 def get_settings_dict(keys):
     """
@@ -92,20 +93,24 @@ def arduino_worker(arduino_values,main_values,trigger,gui=None):
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
+    global abort
+    wait = True
     controller = ArduinoController.ArduinoController(arduino_values.get("SerialPort"),gui=gui)
     controller.write_value(arduino_values.get("FrameRate"))
     controller.write_value(arduino_values.get("StrobeCount"))
     controller.write_value(arduino_values.get("DutyCycle"))
-    while not trigger.get(name='startArduino'):
-        pass
-    controller.write_value(1)
-    trigger.set_on('startCamera')
-    time.sleep(float(main_values.get("RunTime"))+1)
-    controller.write_value(4)
-    trigger.set_off('startCamera')
+    while not trigger.get(name='startArduino') and wait:
+        if abort:
+            wait = False
+    if not abort:
+        controller.write_value(1)
+        trigger.set_on('startCamera')
+        time.sleep(float(main_values.get("RunTime"))+1)
+        controller.write_value(4)
+        trigger.set_off('startCamera')
     Interface.choose_print(gui, 'arduino', 'ArduinoThread: Finished')
 
-def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=None):
+def camera_worker(queue,camera_values,arduino_values,trigger,gui=None):
     """
     The thread worker used to start, format, and end communication with the Ximea camera integral for the operation of ProjectScarberry.
         :argument queue: The queue used to store all of the pictures recieved from XimeaController.
@@ -114,31 +119,32 @@ def camera_worker(queue,camera_values,arduino_values,main_values,trigger,gui=Non
         :type camera_values: dict
         :argument arduino_values: All of the Arduino settings in ScarberrySettings.
         :type arduino_values: dict
-        :argument main_values: All of the Main settings in ScarberrySettings.
-        :type main_values: dict
         :argument trigger: The ThreadTrigger which contains all of the booleans for thread syncing.
         :type trigger: ThreadTrigger
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
+    global abort
     camera = XimeaController.XimeaCamera(arduino_values.get("FrameRate"),
                                          gain=camera_values.get("Gain"),
                                          gui=gui)
-    run = True
+    wait = True
     trigger.set_on('startArduino')
-    while not trigger.get(name='startCamera'):
-        pass
-    camera.start_acquisition()
-    while trigger.get(name='startCamera'):
-        current_image = camera.get_image()
-        queue.put(current_image)
-    camera.stop_acquisition()
-    trigger.set_off('runProcess')
-    Interface.choose_print(gui, 'camera', 'XimeaControllerThread: Finished')
+    while not trigger.get(name='startCamera') and wait:
+        if abort:
+            wait = False
+    if not abort:
+        camera.start_acquisition()
+        while trigger.get(name='startCamera') and not abort:
+            current_image = camera.get_image()
+            queue.put(current_image)
+        camera.stop_acquisition()
+        trigger.set_off('runProcess')
+    Interface.choose_print(gui, 'camera', 'CameraThread: Finished')
 
 def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
     """
-    The thread worker used save and analyze the pictures from XimeaControllerThread.
+    The thread worker used save and analyze the pictures from CameraThread.
         :argument queue: The queue used to store all of the pictures recieved from XimeaController.
         :type queue: Queue.Queue
         :argument process_values: All of the ProcessImage settings in ScarberrySettings.
@@ -148,9 +154,10 @@ def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
+    global abort
     pic_count = 0
-    while trigger.get(name='runProcess'):
-        while not save_queue.empty():
+    while trigger.get(name='runProcess') and not abort:
+        while not save_queue.empty() and not abort:
             pic = save_queue.get()
             Interface.choose_print(gui, 'save', 'pic {} hex: {}'.format(pic_count,pic))
             formated_number = ProcessImage.format_number(pic_count,int(process_values.get("NumberPadding")))
@@ -161,11 +168,12 @@ def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
                                     extention=process_values.get("FileExtension"))
             data_queue.put(pic)
             pic_count += 1
+    trigger.set_off('runData')
     Interface.choose_print(gui, 'save', 'SaveImageThread: Finished')
 
 def data_worker(queue, process_values, trigger, gui=None):
     """
-    The thread worker used save and analyze the pictures from XimeaControllerThread.
+    The thread worker used save and analyze the pictures from CameraThread.
         :argument queue: The queue used to store all of the pictures recieved from XimeaController.
         :type queue: Queue.Queue
         :argument process_values: All of the ProcessImage settings in ScarberrySettings.
@@ -175,12 +183,13 @@ def data_worker(queue, process_values, trigger, gui=None):
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
+    global abort
     pic_count = 0
     data_directory = process_values.get("ImageDirectory") + '\\data'
     if not os.path.exists(data_directory):
         os.makedirs(data_directory)
-    while trigger.get(name='runProcess'):
-        while not queue.empty():
+    while trigger.get(name='runData') and not abort:
+        while not queue.empty() and not abort:
             pic = queue.get()
             Interface.choose_print(gui, 'data', 'pic {} hex: {}'.format(pic_count, pic))
             formated_number = ProcessImage.format_number(pic_count, int(process_values.get("NumberPadding")))
@@ -217,6 +226,7 @@ def start_threads(settings,gui=None):
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
+    global abort
     arduino_values = settings.get("Arduino")
     main_values = settings.get("Main")
     save_pic_queue = Queue.Queue(maxsize=0)
@@ -225,18 +235,19 @@ def start_threads(settings,gui=None):
     trigger_master.register('startArduino',False)
     trigger_master.register('startCamera', False)
     trigger_master.register('runProcess', True)
+    trigger_master.register('runData',True)
     trigger_master.register('runCamera', True)
+    abort = False
     arduino = threading.Thread(name="ArduinoThread",
                                target=arduino_worker,
                                args=(arduino_values,
                                      main_values,
                                      trigger_master),
                                kwargs={'gui':gui})
-    camera = threading.Thread(name="XimeaControllerThread",
+    camera = threading.Thread(name="CameraThread",
                               target=camera_worker,
                               args=(save_pic_queue,settings.get("XimeaController"),
                                     arduino_values,
-                                    main_values,
                                     trigger_master),
                               kwargs={'gui':gui})
     save = threading.Thread(name="SaveImageThread",
@@ -256,6 +267,10 @@ def start_threads(settings,gui=None):
     camera.start()
     save.start()
     data.start()
+
+def abort_session(gui=None):
+    global abort
+    abort = True
 
 def main():
     """

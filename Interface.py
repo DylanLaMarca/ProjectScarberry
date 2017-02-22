@@ -139,7 +139,9 @@ class ScarberryGui:
                               text='   Start   ',
                               command=lambda:Main.start_threads(self.get_input_values_dict(), gui=self))
         start_button.pack()
-        abort_button = Button(self.content, text='   Abort   ',)
+        abort_button = Button(self.content,
+                              text='   Abort   ',
+                              command=lambda:Main.abort_session(gui=self))
         abort_button.pack()
         self.format_texts()
 
