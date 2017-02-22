@@ -3,7 +3,7 @@ Contains all of the code used to interpret, edit, analyze, and save images in Pr
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 27/7/2016 - 21/2/2017
+    :Date: 27/7/2016 - 22/2/2017
     :function convert_to_cv: Converts a base64 string of an image to a numpy array image.
     :function save_image:  Saves an image and formats the file name like the following: "directory\\name_formatted_number.extention".
     :function format_number: Formats a number to a specific length by appending zeros to the front of the number.

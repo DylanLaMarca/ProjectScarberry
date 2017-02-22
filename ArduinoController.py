@@ -3,7 +3,7 @@ Contains all of the code needed to interact and utilize an Arduino for ProjectSc
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 28/7/2016 - 21/2/2016
+    :Date: 28/7/2016 - 22/2/2016
     :class ArduinoController: An object used to establish and manage a connection with an Arduino connected via USB.
 """
 import serial

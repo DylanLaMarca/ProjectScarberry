@@ -3,9 +3,11 @@ Contains all of the code necessary for starting, running, and maintaining Projec
     :author: Dylan Michael LaMarca
     :contact: dylan@lamarca.org
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 26/7/2016 - 21/2/2017
+    :Date: 26/7/2016 - 22/2/2017
     :cvar SETTINGS_FILE_DIRECTORY: The directory of ScarberrySettings.
     :type SETTINGS_FILE_DIRECTORY: type
+    :cvar abort: Boolean used to test whether or not to abort the current session.
+    :type abort: bool
     :class ThreadTrigger: An object which contains, manipulates, and returns booleans for thread activation and syncing.
     :function get_settings_dict: Returns a dictionary of dictionaries containing all of the values in ScarberrySettings.
     :function save_settings: Rewrites ScarberrySettings to a new dictionary of values.
@@ -14,6 +16,7 @@ Contains all of the code necessary for starting, running, and maintaining Projec
     :function camera_worker: The thread worker used to start, format, and end communication with the Ximea camera integral for the operation of ProjectScarberry.
     :function process_worker: The thread worker used save and analyze the pictures from CameraThread.
     :function start_threads: Starts all of the different threads used to control the different parts of ProjectScarberry.
+    :function abort_session: Terminates the workers in Main.
     :function main: Starts ProjectScarberry, loading the settings from ScarberrySettings, and evaluates whether or not to use ScarberryGui.
 """
 import ArduinoController
@@ -291,6 +294,9 @@ def start_threads(settings,gui=None):
     data.start()
 
 def abort_session():
+    """
+    Terminates the workers in Main.
+    """
     global abort
     abort = True
 
