@@ -1,7 +1,7 @@
 """
 Contains all of the code used to interpret, edit, analyze, and save images in ProjectScarberry.
     :author: Dylan Michael LaMarca
-    :contact: dylan@lamarca.org
+    :contact: dlamarca@uw.edu
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 27/7/2016 - 22/2/2017
     :function convert_to_cv: Converts a base64 string of an image to a numpy array image.

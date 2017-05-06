@@ -1,7 +1,7 @@
 """
 Contains all of the code needed to control a XIMEA camera for ProjectScarberry.
     :author: Dylan Michael LaMarca
-    :contact: dylan@lamarca.org
+    :contact: dlamarca@uw.edu
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
     :Date: 7/2/2017 - 22/2/2017
 """

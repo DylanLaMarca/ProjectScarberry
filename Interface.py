@@ -1,9 +1,9 @@
 """
 Contains all of the code used to display and edit program parameters, outside of the ScarberrySettings file and the Python Shell, for ProjectScarberry.
     :author: Dylan Michael LaMarca
-    :contact: dylan@lamarca.org
+    :contact: dlamarca@uw.edu
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 15/8/2016 - 22/2/2017
+    :Date: 15/8/2016 - 5/5/2017
     :class ScarberryGui: An object used to display the string output of the threads in main as well as displaying and manipulating the values stored in ScarberrySettings and used in Main.
     :function choose_print: Evaluates whether or not text shoud be printed to the Python Shell or an interface.
 """
@@ -38,6 +38,8 @@ class ScarberryGui:
         :type thresh: EntryElement
         :ivar name: An EntryElement used to store and manipulate 'ProcessImage:BaseName' in ScarberrySettings.
         :type name: EntryElement
+        :ivar auto_count: A CheckBoxElement used to choose whether the series of pictures are counted and named accordingly
+        :type auto_count: CheckBoxElement
         :ivar padding: An EntryElement used to store and manipulate 'ProcessImage:NumberPadding' in ScarberrySettings.
         :type padding: EntryElement
         :ivar extension: An OptionMenuElement used to store and manipulate 'ProcessImage:FileExtension' in ScarberrySettings.
@@ -99,11 +101,12 @@ class ScarberryGui:
     dutycycle = None
     thresh = None
     name = None
+    auto_count = None
     padding = None
     extension = None
     blur = None
     gain = None
-    shink = None
+    shrink = None
     draw = None
     draw_roi = None
     draw_centroid = None
@@ -199,13 +202,14 @@ class ScarberryGui:
         """
         Formats the text entry bars in ScarberryGui.
         """
-        self.com = ScarberryGui.EntryElement(self.content,'Serial Port:            COM',2)
+        self.com = ScarberryGui.EntryElement(self.content,'Serial Port:         COM',2)
         self.runtime = ScarberryGui.EntryElement(self.content,'RunTime:  ',5)
         self.framerate = ScarberryGui.EntryElement(self.content,'Framerate:  ',5)
         self.strobecount = ScarberryGui.EntryElement(self.content,'Strobe Count:  ',5)
-        self.dutycycle = ScarberryGui.EntryElement(self.content,'Duty Cycle:                0.',2)
+        self.dutycycle = ScarberryGui.EntryElement(self.content,'Duty Cycle:               0.',2)
         self.thresh = ScarberryGui.EntryElement(self.content,'Thresh Limit:  ',5)
         self.name = ScarberryGui.EntryElement(self.content,'Pic Name:  ',12)
+        self.auto_count = ScarberryGui.CheckBoxElement(self.content,'Auto Number',2,E)
         self.padding = ScarberryGui.EntryElement(self.content,'Num Padding: ',3)
         self.option_elements.extend([self.com,
                                      self.runtime,
@@ -214,6 +218,7 @@ class ScarberryGui:
                                      self.dutycycle,
                                      self.thresh,
                                      self.name,
+                                     self.auto_count,
                                      self.padding])
 
     def format_optionmenus(self):
@@ -320,6 +325,7 @@ class ScarberryGui:
         self.dutycycle.set_text((raw_dutycycle)[raw_dutycycle.index('.')+1:])
         self.thresh.set_text(process_values.get("ThreshLimit"))
         self.name.set_text(process_values.get("BaseName"))
+        self.auto_count.value.set(process_values.get("Count"))
         self.padding.set_text(process_values.get("NumberPadding"))
         self.extension.set_option(process_values.get("FileExtension"))
         self.blur.set_option(process_values.get("BlurValue"))
@@ -349,6 +355,7 @@ class ScarberryGui:
                               "ThreshLimit":self.thresh.value.get(),
                               "ImageDirectory":self.image_directory,
                               "BaseName":self.name.value.get(),
+                              "Count":self.auto_count.value.get(),
                               "NumberPadding":self.padding.value.get(),
                               "FileExtension":self.extension.value.get(),
                               "SaveDraw":self.draw.value.get(),
@@ -578,3 +585,4 @@ def choose_print(gui, label, text):
         widget.config(state="normal")
         widget.insert('0.0', '{}\n'.format(text))
         widget.config(state=DISABLED)
+

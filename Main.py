@@ -1,13 +1,15 @@
 """
 Contains all of the code necessary for starting, running, and maintaining ProjectScarberry.
     :author: Dylan Michael LaMarca
-    :contact: dylan@lamarca.org
+    :contact: dlamarca@uw.edu
     :GitHub: https://github.com/GhoulPoP/ProjectScarberry
-    :Date: 26/7/2016 - 22/2/2017
+    :Date: 26/7/2016 - 5/5/2017
     :cvar SETTINGS_FILE_DIRECTORY: The directory of ScarberrySettings.
     :type SETTINGS_FILE_DIRECTORY: type
     :cvar abort: Boolean used to test whether or not to abort the current session.
     :type abort: bool
+    :cvar session_count: Counts the number of times the threads have been run
+    :cvar type: int
     :class ThreadTrigger: An object which contains, manipulates, and returns booleans for thread activation and syncing.
     :function get_settings_dict: Returns a dictionary of dictionaries containing all of the values in ScarberrySettings.
     :function save_settings: Rewrites ScarberrySettings to a new dictionary of values.
@@ -30,6 +32,7 @@ import os
 
 SETTINGS_FILE_DIRECTORY = 'ScarberrySettings'
 abort = False
+session_count  = -1
 
 def get_settings_dict(keys):
     """
@@ -167,7 +170,7 @@ def camera_worker(queue,camera_values,arduino_values,trigger,gui=None):
         trigger.set_off('runProcess')
     Interface.choose_print(gui, 'camera', 'CameraThread: Finished')
 
-def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
+def save_worker(save_queue, data_queue, process_values, trigger, session_count, gui=None):
     """
     The thread worker used save and analyze the pictures from CameraThread.
         :argument queue: The queue used to store all of the pictures recieved from XimeaController.
@@ -176,6 +179,8 @@ def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
         :type process_values: dict
         :argument trigger: The ThreadTrigger which contains all of the booleans for thread syncing.
         :type trigger: ThreadTrigger
+        :argument session_count: The number of the current instance of the threads
+        :type session_count: int
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
@@ -186,17 +191,20 @@ def save_worker(save_queue, data_queue, process_values, trigger, gui=None):
             pic = save_queue.get()
             Interface.choose_print(gui, 'save', 'pic {} hex: {}'.format(pic_count,pic))
             formated_number = ProcessImage.format_number(pic_count,int(process_values.get("NumberPadding")))
+            save_name = process_values.get("BaseName")
+            if process_values.get("Count") > 0:
+                save_name = '{}.{}'.format(save_name,session_count)
             ProcessImage.save_image(pic,
                                     formated_number,
                                     image_direcoty=process_values.get("ImageDirectory"),
-                                    name=process_values.get("BaseName"),
+                                    name=save_name,
                                     extention=process_values.get("FileExtension"))
             data_queue.put(pic)
             pic_count += 1
     trigger.set_off('runData')
     Interface.choose_print(gui, 'save', 'SaveImageThread: Finished')
 
-def data_worker(queue, process_values, trigger, gui=None):
+def data_worker(queue, process_values, trigger, session_count, gui=None):
     """
     The thread worker used save and analyze the pictures from CameraThread.
         :argument queue: The queue used to store all of the pictures recieved from XimeaController.
@@ -205,6 +213,8 @@ def data_worker(queue, process_values, trigger, gui=None):
         :type process_values: dict
         :argument trigger: The ThreadTrigger which contains all of the booleans for thread syncing.
         :type trigger: ThreadTrigger
+        :argument session_count: The number of the current instance of the threads
+        :type session_count: int
         :keyword gui: Optional interface used to print.
         :type gui: Interface.ScarberryGui
     """
@@ -218,14 +228,17 @@ def data_worker(queue, process_values, trigger, gui=None):
             pic = queue.get()
             Interface.choose_print(gui, 'data', 'pic {} hex: {}'.format(pic_count, pic))
             formated_number = ProcessImage.format_number(pic_count, int(process_values.get("NumberPadding")))
+            save_name = process_values.get("BaseName")
+            if process_values.get("Count") > 0:
+                save_name = '{}.{}'.format(save_name, session_count)
             data_filename = '{}\\data-{}_{}{}'.format(data_directory,
-                                                      process_values.get("BaseName"),
+                                                      save_name,
                                                       formated_number,
                                                       '.txt')
             if process_values.get("SaveDraw"):
                 ProcessImage.draw_and_data(pic,
                                            '{}\\data\\data-{}_{}{}'.format(process_values.get("ImageDirectory"),
-                                                                           process_values.get("BaseName"),
+                                                                           save_name,
                                                                            formated_number,
                                                                            process_values.get("FileExtension")),
                                            data_filename,
@@ -252,6 +265,7 @@ def start_threads(settings,gui=None):
         :type gui: Interface.ScarberryGui
     """
     global abort
+    global session_count
     arduino_values = settings.get("Arduino")
     main_values = settings.get("Main")
     save_pic_queue = Queue.Queue(maxsize=0)
@@ -263,11 +277,13 @@ def start_threads(settings,gui=None):
     trigger_master.register('runData',True)
     trigger_master.register('runCamera', True)
     abort = False
+    if settings.get("ProcessImage").get("Count") > 0:
+        session_count += 1
     arduino = threading.Thread(name="ArduinoThread",
                                target=arduino_worker,
                                args=(arduino_values,
                                      main_values,
-                                     trigger_master),
+                                     trigger_master,),
                                kwargs={'gui':gui})
     camera = threading.Thread(name="CameraThread",
                               target=camera_worker,
@@ -280,13 +296,15 @@ def start_threads(settings,gui=None):
                                args=(save_pic_queue,
                                      data_pic_queue,
                                      settings.get("ProcessImage"),
-                                     trigger_master),
+                                     trigger_master,
+                                     session_count),
                                kwargs={'gui':gui})
     data = threading.Thread(name="DataImageThread",
                             target=data_worker,
                             args=(data_pic_queue,
                                   settings.get("ProcessImage"),
-                                  trigger_master),
+                                  trigger_master,
+                                  session_count),
                             kwargs={'gui': gui})
     arduino.start()
     camera.start()
