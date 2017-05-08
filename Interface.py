@@ -196,7 +196,7 @@ class ScarberryGui:
         preset_menu.add_command(label='Reset to Presets', command=self.reset_to_preset)
         settings_menu.add_cascade(label='Presets', menu=preset_menu, underline=0)
         menu_bar.add_cascade(label='Settings', menu=settings_menu)
-        menu_bar.add_command(label='About')
+        menu_bar.add_command(label='About', command=self.open_about)
 
     def format_entries(self):
         """
@@ -305,6 +305,22 @@ class ScarberryGui:
         Sets all of the input elements to their corresponding values stored in ScarberrySettings.
         """
         self.set_inputs(Main.get_settings_dict(['Main', 'Arduino', 'XimeaController', 'ProcessImage']))
+
+    def open_about(self):
+        about = Toplevel()
+        about.title("About")
+        about.wm_iconbitmap('icon\\butterflybrown-256.ico')
+        message_text = ''
+        try:
+            with open('About') as file:
+                for line in file.readlines():
+                    message_text += line
+        except IOError:
+            message_text = 'I am sorry but the About file has been lost. Thank you for looking at this though, you are probably the only one T .T'
+        msg = Message(about, text=message_text,width=3000)
+        msg.pack()
+        button = Button(about, text="Close", command=about.destroy)
+        button.pack()
 
     def set_inputs(self, settings):
         """
