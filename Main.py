@@ -322,7 +322,6 @@ def main():
     """
     Starts ProjectScarberry, loading the settings from ScarberrySettings, and evaluates whether or not to use ScarberryGui.
     """
-    print help(ArduinoController.ArduinoController.write_value)
     settings = get_settings_dict(['Main','Arduino','XimeaController','ProcessImage'])
     if(int(settings.get("Main").get("UseInterface")) > 0):
         gui = Interface.ScarberryGui()

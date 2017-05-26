@@ -13,8 +13,8 @@ Contains all of the code used to interpret, edit, analyze, and save images in Pr
     :function save_data: Saves a dictionary containing information and other dictionaries of information about the contour clusters of an image to a file.
     :function format_data_dict: Formats and saves information from a dictionary to a file through recursion.
 """
-import cv2
 import numpy as np
+import cv2
 import base64
 
 def save_image(image,formated_number,image_direcoty='images',name='image',extention='.TIFF'):
